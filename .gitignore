@@ -9,7 +9,7 @@ frontend/dist/
 frontend/.env
 backend/.env
 
-# Python
+# Pythontouch README.md
 __pycache__/
 *.py[cod]
 *.pkl
