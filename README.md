@@ -182,7 +182,7 @@ After the initial setup, use these commands whenever you want to run the project
 
 ```bash
 cd backend
-source .venv/bin/activate
+.venv\Scripts\activate
 uvicorn app.main:app --reload
 ```
 
