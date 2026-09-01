@@ -1,41 +1,44 @@
-import { useState } from "react";
+import { useMemo, useState } from 'react';
+import Dashboard from './components/Dashboard/Dashboard';
+import AlertManagement from './components/Dashboard/AlertManagement';
+import type { Admin } from './types';
 
-interface RiskResponse {
-  location: string;
-  risk_level: string;
-  probability: number;
-}
-
+/**
+ * Main App component
+ * TODO: Once authentication is implemented, fetch currentAdmin from auth context or session
+ * For now, using a mock admin for demo purposes
+ */
 function App() {
-  const [risk, setRisk] = useState<RiskResponse | null>(null);
+  // Mock admin - TODO: replace with authenticated user from auth state
+  const currentAdmin: Admin = useMemo(
+    () => ({
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'Aryan S.',
+      email: 'aryan@fiji-met.gov.fj',
+      initials: 'AS',
+      role: 'admin',
+    }),
+    []
+  );
 
-  const getFloodRisk = async () => {
-    const apiUrl = import.meta.env.VITE_API_URL;
+  // Page routing state
+  const [currentPage, setCurrentPage] = useState<string>('dashboard');
 
-    const response = await fetch(`${apiUrl}/api/risk/Suva`);
-    const data: RiskResponse = await response.json();
-
-    setRisk(data);
+  // Handle navigation from TopNav
+  const handleNavigation = (pageId: string) => {
+    setCurrentPage(pageId);
+    window.scrollTo(0, 0);
   };
 
   return (
-    <main>
-      <h1>Fiji Flood Risk Dashboard</h1>
-
-      <button onClick={getFloodRisk}>
-        Check Suva Flood Risk
-      </button>
-
-      {risk && (
-        <div>
-          <h2>{risk.location}</h2>
-          <p>Risk Level: {risk.risk_level}</p>
-          <p>
-            Probability: {(risk.probability * 100).toFixed(0)}%
-          </p>
-        </div>
+    <div>
+      {currentPage === 'dashboard' && (
+        <Dashboard currentAdmin={currentAdmin} onNavigate={handleNavigation} />
       )}
-    </main>
+      {currentPage === 'alerts' && (
+        <AlertManagement currentAdmin={currentAdmin} onNavigate={handleNavigation} />
+      )}
+    </div>
   );
 }
 

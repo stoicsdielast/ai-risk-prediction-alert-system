@@ -1,0 +1,736 @@
+/**
+ * Dashboard Stylesheet
+ * Design System: Navy (#2D2F54) + White + Grayscale
+ * Flat design: no shadows, no gradients, 1px borders, 4px radius
+ * No animations/transitions — instant color changes only
+ */
+
+/* ================================================================
+   ROOT & LAYOUT
+   ================================================================ */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #ffffff;
+  color: var(--text, #333333);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.dashboard-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ================================================================
+   TOP NAVIGATION (Horizontal)
+   ================================================================ */
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0 24px;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+/* Wordmark (left) */
+.nav-wordmark {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d2f54;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+/* Nav items (center) */
+.nav-items {
+  display: flex;
+  gap: 0;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666666;
+  font-size: 14px;
+  border-bottom: 3px solid transparent;
+  transition: none;
+}
+
+.nav-item:hover {
+  color: #2d2f54;
+}
+
+.nav-item.active {
+  color: #2d2f54;
+  border-bottom-color: #2d2f54;
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 16px;
+}
+
+.nav-label {
+  white-space: nowrap;
+}
+
+/* Avatar (right) */
+.nav-avatar {
+  min-width: fit-content;
+}
+
+.avatar-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #2d2f54;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: default;
+}
+
+/* ================================================================
+   PAGE HEADER (Title + Subtitle)
+   ================================================================ */
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #2d2f54;
+  margin: 0 0 8px 0;
+  text-transform: none;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #666666;
+  margin: 0;
+}
+
+/* ================================================================
+   METRICS ROW (4 Cards)
+   ================================================================ */
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.metric-card {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 24px;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 13px;
+  color: #666666;
+  font-weight: 500;
+  margin-bottom: 12px;
+  text-transform: none;
+}
+
+.metric-value {
+  font-size: 36px;
+  font-weight: 600;
+  color: #2d2f54;
+}
+
+/* ================================================================
+   PENDING APPROVALS PANEL
+   ================================================================ */
+
+.pending-approvals-panel {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.panel-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 16px;
+}
+
+.panel-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d2f54;
+  margin: 0 0 8px 0;
+}
+
+.panel-subtitle {
+  font-size: 13px;
+  color: #666666;
+  margin: 0;
+}
+
+.empty-state {
+  padding: 32px 16px;
+  text-align: center;
+  color: #999999;
+  font-size: 14px;
+}
+
+/* ================================================================
+   ALERTS LIST & ALERT ROW
+   ================================================================ */
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alert-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.alert-row.has-error {
+  border-left: 3px solid #c85a54;
+}
+
+/* Status dot + severity */
+.alert-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: fit-content;
+  flex-shrink: 0;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.severity-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333333;
+}
+
+/* Location info */
+.alert-location {
+  flex: 1;
+  min-width: 200px;
+}
+
+.location-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d2f54;
+}
+
+/* Metadata (confidence + timestamp) */
+.alert-meta {
+  font-size: 12px;
+  color: #999999;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+/* Action buttons */
+.alert-actions {
+  display: flex;
+  gap: 8px;
+  min-width: fit-content;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: none;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.action-edit {
+  background-color: #f5f5f5;
+  color: #2d2f54;
+  border-color: #d0d0d0;
+}
+
+.action-edit:hover:not(:disabled) {
+  background-color: #eeeeee;
+}
+
+.action-suppress {
+  background-color: #f5f5f5;
+  color: #2d2f54;
+  border-color: #d0d0d0;
+}
+
+.action-suppress:hover:not(:disabled) {
+  background-color: #eeeeee;
+}
+
+.action-approve {
+  background-color: #2d2f54;
+  color: #ffffff;
+  border-color: #2d2f54;
+}
+
+.action-approve:hover:not(:disabled) {
+  background-color: #1a1c2f;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Inline error message */
+.alert-error {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: #fef5f5;
+  border: 1px solid #e8d4d4;
+  border-radius: 4px;
+  color: #c85a54;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+/* ================================================================
+   MODALS (Edit & Suppress)
+   ================================================================ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d2f54;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666666;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #2d2f54;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 16px 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Form elements in modals */
+.form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2d2f54;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+.required {
+  color: #c85a54;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #333333;
+  background-color: #ffffff;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #2d2f54;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-group input:disabled,
+.form-group textarea:disabled,
+.form-group select:disabled {
+  background-color: #f5f5f5;
+  color: #999999;
+}
+
+.form-help {
+  font-size: 12px;
+  color: #999999;
+  margin-top: 4px;
+}
+
+.suppress-prompt {
+  font-size: 13px;
+  color: #666666;
+  margin: 0 0 16px 0;
+}
+
+/* ================================================================
+   BUTTONS (Modal)
+   ================================================================ */
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background-color: #2d2f54;
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1a1c2f;
+}
+
+.btn-secondary {
+  background-color: #f5f5f5;
+  color: #2d2f54;
+  border: 1px solid #d0d0d0;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #eeeeee;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Error message in modals */
+.error-message {
+  padding: 12px;
+  background-color: #fef5f5;
+  border: 1px solid #e8d4d4;
+  border-radius: 4px;
+  color: #c85a54;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* ================================================================
+   BOTTOM ROW (2 Columns: Recent Activity + Quick Links)
+   ================================================================ */
+
+.bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* ================================================================
+   CARDS (Recent Activity, Quick Links)
+   ================================================================ */
+
+.card {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.card-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d2f54;
+  margin: 0;
+}
+
+.card-body {
+  flex: 1;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.empty-message {
+  color: #999999;
+  font-size: 13px;
+  text-align: center;
+  padding: 16px 0;
+  margin: 0;
+}
+
+/* ================================================================
+   RECENT ACTIVITY CARD
+   ================================================================ */
+
+.activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activity-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.activity-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-text {
+  font-size: 13px;
+  color: #333333;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.activity-text strong {
+  color: #2d2f54;
+  font-weight: 600;
+}
+
+.activity-time {
+  font-size: 12px;
+  color: #999999;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ================================================================
+   QUICK LINKS CARD
+   ================================================================ */
+
+.quick-links-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-link-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #2d2f54;
+  cursor: pointer;
+  transition: none;
+  font-weight: 500;
+  text-align: left;
+}
+
+.quick-link-btn:hover {
+  background-color: #eeeeee;
+}
+
+/* ================================================================
+   ERROR BANNER (Top of dashboard)
+   ================================================================ */
+
+.error-banner {
+  padding: 16px;
+  background-color: #fef5f5;
+  border: 1px solid #e8d4d4;
+  border-radius: 4px;
+  color: #c85a54;
+  margin-bottom: 24px;
+  font-size: 13px;
+}
+
+.error-banner p {
+  margin: 0;
+}
+
+/* ================================================================
+   RESPONSIVE (1024px breakpoint)
+   ================================================================ */
+
+@media (max-width: 1024px) {
+  .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bottom-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-content {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-nav {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .nav-items {
+    order: 3;
+    width: 100%;
+  }
+
+  .nav-item {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .nav-icon {
+    font-size: 14px;
+  }
+
+  .alert-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .alert-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+
+  .modal-content {
+    width: 95%;
+  }
+}
