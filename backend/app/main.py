@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.admin import router as admin_router
+from app.api.routes.auth import router as auth_router
+
 app = FastAPI(
     title="Fiji Flood Risk API",
     description="Backend API for the Fiji Flood Risk Prediction and Community Alert System",
@@ -19,6 +22,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
+app.include_router(admin_router)
 
 
 @app.get("/")

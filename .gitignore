@@ -8,6 +8,9 @@ frontend/dist/
 .env.*
 frontend/.env
 backend/.env
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # Pythontouch README.md
 __pycache__/
