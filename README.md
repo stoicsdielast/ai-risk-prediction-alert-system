@@ -4,6 +4,7 @@ AI-powered flood risk prediction system designed for Fiji.
 
 ## Documentation
 
+- [Presentation handbook: project, architecture, security, privacy, demo, and deployment](docs/PRESENTATION_HANDBOOK.md)
 - [Authentication system: how it works](docs/AUTHENTICATION_WORKFLOW.md)
 - [Frontend prototype: architecture, setup, and demo guide](docs/PROTOTYPE_UI.md)
 - [Frontend setup and usage](frontend/README.md)
