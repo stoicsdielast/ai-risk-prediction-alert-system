@@ -6,6 +6,7 @@ type PillValue =
   | 'AI_PREDICTION'
   | 'OFFICIAL_WARNING'
   | 'NO_PREDICTION'
+  | 'SAMPLE_RISK'
 
 interface DataPillProps {
   value: PillValue
@@ -25,6 +26,7 @@ const labels: Record<PillValue, string> = {
   AI_PREDICTION: 'AI prediction',
   OFFICIAL_WARNING: 'Official warning',
   NO_PREDICTION: 'No prediction',
+  SAMPLE_RISK: 'Sample risk',
 }
 
 export function DataPill({ value, label, compact = false }: DataPillProps) {

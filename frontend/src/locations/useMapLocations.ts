@@ -5,6 +5,8 @@ import { usePrototypeData } from '../prototype/usePrototypeData'
 import type { ApiLocation, MapLocation } from '../types/location'
 import type { WeatherLocation } from '../types/prototype'
 
+export type MapLocationsStatus = 'loading' | 'error' | 'ready'
+
 type LoadState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -14,13 +16,23 @@ export function toMapLocation(
   location: ApiLocation,
   conditions: WeatherLocation | null,
 ): MapLocation {
+  const { prediction } = location
+
   return {
     id: location.slug,
     name: location.name,
     division: location.division_label,
     latitude: location.latitude,
     longitude: location.longitude,
-    riskLevel: conditions?.riskLevel ?? null,
+    riskLevel: prediction?.risk_level ?? null,
+    prediction: prediction && {
+      riskLevel: prediction.risk_level,
+      confidencePercent: prediction.confidence_percent,
+      label: prediction.label,
+      summary: prediction.summary,
+      isSample: prediction.is_sample,
+      generatedAt: prediction.generated_at,
+    },
     conditions,
   }
 }
@@ -53,8 +65,8 @@ export function useMapLocations() {
   const locations = useMemo(() => {
     if (state.status !== 'ready') return []
 
-    // Coordinates and divisions come from the backend; weather and risk are
-    // still prototype data, matched by slug where the demo set has an entry.
+    // Locations and risk predictions come from the backend. Weather and
+    // official warnings are still prototype data, matched by slug.
     const conditionsById = new Map(
       prototypeLocations.map((location) => [location.id, location]),
     )

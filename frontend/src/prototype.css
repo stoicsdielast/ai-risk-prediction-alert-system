@@ -355,6 +355,13 @@
   background: #f0f1ff;
 }
 
+.data-pill--sample_risk {
+  color: #2f6f86;
+  border-color: #c3dde6;
+  background: #eef7fa;
+  border-style: dashed;
+}
+
 .data-pill--official_warning {
   color: #98354f;
   border-color: #ecc1cd;
@@ -767,6 +774,12 @@
   border-color: #bec3d6;
 }
 
+.risk-filter__button:disabled,
+.map-search__field input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .risk-filter__button.is-active {
   color: #fff;
   border-color: #494e86;
@@ -955,6 +968,18 @@
   padding: 2rem;
   color: #737b8d;
   text-align: center;
+}
+
+.weather-map-empty--loading .weather-map-empty__mark {
+  animation: weather-map-spin 1.1s linear infinite;
+}
+
+@keyframes weather-map-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weather-map-empty--loading .weather-map-empty__mark { animation: none; }
 }
 
 .weather-map-empty__mark,

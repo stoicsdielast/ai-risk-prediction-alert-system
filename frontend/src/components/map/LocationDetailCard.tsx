@@ -1,4 +1,4 @@
-import type { MapLocation } from '../../types/location'
+import type { MapLocation, MapPrediction } from '../../types/location'
 import { formatDateTime, formatRelativeTime } from '../../utils/date'
 import { DataPill, RiskPill } from '../pills/DataPill'
 
@@ -19,6 +19,49 @@ function WeatherMetric({ label, value, hint }: WeatherMetricProps) {
       <strong>{value}</strong>
       {hint && <small>{hint}</small>}
     </div>
+  )
+}
+
+function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
+  if (!prediction) {
+    return (
+      <section className="prediction-panel" aria-labelledby="prediction-title">
+        <div className="prediction-panel__heading">
+          <DataPill value="NO_PREDICTION" />
+        </div>
+        <h3 id="prediction-title">No prediction available</h3>
+        <p>There is no flood-risk prediction for this location yet.</p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="prediction-panel" aria-labelledby="prediction-title">
+      <div className="prediction-panel__heading">
+        <DataPill value={prediction.isSample ? 'SAMPLE_RISK' : 'AI_PREDICTION'} />
+        <span>{prediction.confidencePercent}% confidence</span>
+      </div>
+      <h3 id="prediction-title">{prediction.label}</h3>
+      <p>{prediction.summary}</p>
+      <div
+        className="confidence-meter"
+        role="meter"
+        aria-label="Prediction confidence"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={prediction.confidencePercent}
+      >
+        <span
+          className="confidence-meter__fill"
+          style={{ width: `${prediction.confidencePercent}%` }}
+        />
+      </div>
+      <small>
+        {prediction.isSample
+          ? 'Labelled sample for testing · not a real forecast or official warning'
+          : 'Decision-support estimate · not an official public warning'}
+      </small>
+    </section>
   )
 }
 
@@ -45,7 +88,7 @@ export function LocationDetailCard({ location }: LocationDetailCardProps) {
         <RiskPill risk={location.riskLevel} />
       </header>
 
-      {conditions ? (
+      {conditions && (
         <>
           <p className="location-detail-card__timestamp">
             Updated{' '}
@@ -77,42 +120,10 @@ export function LocationDetailCard({ location }: LocationDetailCardProps) {
               <WeatherMetric label="Wind" value={`${conditions.windKph} km/h`} />
             </div>
           </section>
-
-          <section className="prediction-panel" aria-labelledby="prediction-title">
-            <div className="prediction-panel__heading">
-              <DataPill value="AI_PREDICTION" />
-              <span>{conditions.prediction.confidencePercent}% confidence</span>
-            </div>
-            <h3 id="prediction-title">{conditions.prediction.label}</h3>
-            <p>{conditions.prediction.summary}</p>
-            <div
-              className="confidence-meter"
-              role="meter"
-              aria-label="Prediction confidence"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={conditions.prediction.confidencePercent}
-            >
-              <span
-                className="confidence-meter__fill"
-                style={{ width: `${conditions.prediction.confidencePercent}%` }}
-              />
-            </div>
-            <small>Decision-support estimate · not an official public warning</small>
-          </section>
         </>
-      ) : (
-        <section className="prediction-panel" aria-labelledby="prediction-title">
-          <div className="prediction-panel__heading">
-            <DataPill value="NO_PREDICTION" />
-          </div>
-          <h3 id="prediction-title">No prediction available</h3>
-          <p>
-            There is no flood-risk prediction or weather observation for this
-            location yet.
-          </p>
-        </section>
       )}
+
+      <PredictionPanel prediction={location.prediction} />
 
       <section
         className={`official-warning-panel${

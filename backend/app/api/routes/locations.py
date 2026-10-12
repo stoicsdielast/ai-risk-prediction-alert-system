@@ -8,6 +8,7 @@ from app.services.location_service import (
     LocationNotFoundError,
     LocationServiceError,
     get_location_by_slug,
+    latest_predictions,
     list_locations,
 )
 
@@ -31,12 +32,15 @@ def get_locations(
     db: Session = Depends(get_db),
 ) -> list[LocationResponse]:
     try:
-        return [
-            LocationResponse.model_validate(location)
-            for location in list_locations(db, division=division, search=search)
-        ]
+        locations = list_locations(db, division=division, search=search)
+        predictions = latest_predictions(db, [location.id for location in locations])
     except LocationServiceError as exc:
         raise _service_unavailable() from exc
+
+    return [
+        LocationResponse.from_location(location, predictions.get(location.id))
+        for location in locations
+    ]
 
 
 @router.get("/divisions", response_model=list[DivisionResponse])
@@ -50,7 +54,8 @@ def get_divisions() -> list[DivisionResponse]:
 @router.get("/{slug}", response_model=LocationResponse)
 def get_location(slug: str, db: Session = Depends(get_db)) -> LocationResponse:
     try:
-        return LocationResponse.model_validate(get_location_by_slug(db, slug))
+        location = get_location_by_slug(db, slug)
+        prediction = latest_predictions(db, [location.id]).get(location.id)
     except LocationNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -58,3 +63,5 @@ def get_location(slug: str, db: Session = Depends(get_db)) -> LocationResponse:
         ) from exc
     except LocationServiceError as exc:
         raise _service_unavailable() from exc
+
+    return LocationResponse.from_location(location, prediction)

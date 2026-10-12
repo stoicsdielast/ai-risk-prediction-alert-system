@@ -32,8 +32,10 @@ interface MapViewportProps {
   selectedLocation: MapLocation | null
 }
 
-function riskDescription(riskLevel: RiskLevel | null) {
-  return riskLevel ? `${RISK_LABELS[riskLevel]} flood risk` : 'No prediction available'
+function riskDescription({ prediction }: MapLocation) {
+  if (!prediction) return 'No prediction available'
+  const description = `${RISK_LABELS[prediction.riskLevel]} flood risk`
+  return prediction.isSample ? `${description} (sample)` : description
 }
 
 function markerIcon(riskLevel: RiskLevel | null, isSelected: boolean) {
@@ -131,7 +133,7 @@ export function WeatherMap({
             key={location.id}
             position={[location.latitude, location.longitude]}
             icon={markerIcons.get(location.id)}
-            title={`${location.name} — ${riskDescription(location.riskLevel)}`}
+            title={`${location.name} — ${riskDescription(location)}`}
             riseOnHover
             eventHandlers={{
               click: () => onSelectLocation(location.id),
@@ -140,7 +142,7 @@ export function WeatherMap({
             <Tooltip direction="top" opacity={1}>
               <span className="weather-map-tooltip">
                 <strong>{location.name}</strong>
-                <small>{riskDescription(location.riskLevel)}</small>
+                <small>{riskDescription(location)}</small>
               </span>
             </Tooltip>
           </Marker>
