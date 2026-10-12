@@ -342,7 +342,8 @@
   background: #fff0f1;
 }
 
-.data-pill--suppressed {
+.data-pill--suppressed,
+.data-pill--no_prediction {
   color: #626b7a;
   border-color: #d8dce3;
   background: #f1f3f6;
@@ -889,6 +890,7 @@
 .weather-map-marker--moderate { color: #d29320; }
 .weather-map-marker--high { color: #e0652d; }
 .weather-map-marker--very-high { color: #c93645; }
+.weather-map-marker--none { color: #8a92a3; }
 
 .weather-map-marker__pulse {
   position: absolute;

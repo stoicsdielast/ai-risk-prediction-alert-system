@@ -3,7 +3,7 @@ import { LocationDetailCard } from '../components/map/LocationDetailCard'
 import { WeatherMap } from '../components/map/WeatherMap'
 import { RiskPill } from '../components/pills/DataPill'
 import { PageHeader } from '../components/layout/PageHeader'
-import { usePrototypeData } from '../prototype/usePrototypeData'
+import { useMapLocations } from '../locations/useMapLocations'
 import type { RiskLevel } from '../types/prototype'
 
 type RiskFilter = 'ALL' | RiskLevel
@@ -17,15 +17,10 @@ const RISK_FILTERS: Array<{ value: RiskFilter; label: string }> = [
 ]
 
 export function WeatherMapPage() {
-  const { locations } = usePrototypeData()
+  const { status, error, locations, retry } = useMapLocations()
   const [searchQuery, setSearchQuery] = useState('')
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('ALL')
-  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
-    () =>
-      locations.find((location) => location.riskLevel === 'VERY_HIGH')?.id ??
-      locations[0]?.id ??
-      null,
-  )
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
 
   const filteredLocations = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -51,7 +46,14 @@ export function WeatherMapPage() {
     const selectionIsVisible = filteredLocations.some(
       (location) => location.id === selectedLocationId,
     )
-    if (!selectionIsVisible) setSelectedLocationId(filteredLocations[0].id)
+    if (!selectionIsVisible) {
+      setSelectedLocationId(
+        (
+          filteredLocations.find((location) => location.riskLevel === 'VERY_HIGH') ??
+          filteredLocations[0]
+        ).id,
+      )
+    }
   }, [filteredLocations, selectedLocationId])
 
   const selectedLocation =
@@ -127,8 +129,11 @@ export function WeatherMapPage() {
             <div>
               <span>Prototype map view</span>
               <h2 id="map-results-title">
-                {filteredLocations.length}{' '}
-                {filteredLocations.length === 1 ? 'location' : 'locations'} shown
+                {status === 'ready'
+                  ? `${filteredLocations.length} ${
+                      filteredLocations.length === 1 ? 'location' : 'locations'
+                    } shown`
+                  : 'Monitored locations'}
               </h2>
             </div>
             {filtersAreActive && (
@@ -138,11 +143,29 @@ export function WeatherMapPage() {
             )}
           </header>
 
-          <WeatherMap
-            locations={filteredLocations}
-            selectedLocationId={selectedLocationId}
-            onSelectLocation={setSelectedLocationId}
-          />
+          {status === 'loading' && (
+            <div className="weather-map-empty" role="status">
+              <h2>Loading monitored locations…</h2>
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div className="weather-map-empty" role="alert">
+              <h2>Locations could not be loaded</h2>
+              <p>{error}</p>
+              <button type="button" className="map-clear-button" onClick={retry}>
+                Try again
+              </button>
+            </div>
+          )}
+
+          {status === 'ready' && (
+            <WeatherMap
+              locations={filteredLocations}
+              selectedLocationId={selectedLocationId}
+              onSelectLocation={setSelectedLocationId}
+            />
+          )}
 
           {filteredLocations.length > 0 && (
             <div className="map-location-list" aria-label="Visible monitored locations">

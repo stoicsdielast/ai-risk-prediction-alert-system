@@ -1,9 +1,9 @@
-import type { WeatherLocation } from '../../types/prototype'
+import type { MapLocation } from '../../types/location'
 import { formatDateTime, formatRelativeTime } from '../../utils/date'
 import { DataPill, RiskPill } from '../pills/DataPill'
 
 interface LocationDetailCardProps {
-  location: WeatherLocation | null
+  location: MapLocation | null
 }
 
 interface WeatherMetricProps {
@@ -33,6 +33,8 @@ export function LocationDetailCard({ location }: LocationDetailCardProps) {
     )
   }
 
+  const { conditions } = location
+
   return (
     <aside className="location-detail-card" aria-live="polite">
       <header className="location-detail-card__header">
@@ -43,69 +45,90 @@ export function LocationDetailCard({ location }: LocationDetailCardProps) {
         <RiskPill risk={location.riskLevel} />
       </header>
 
-      <p className="location-detail-card__timestamp">
-        Updated{' '}
-        <time dateTime={location.updatedAt} title={formatDateTime(location.updatedAt)}>
-          {formatRelativeTime(location.updatedAt)}
-        </time>
-      </p>
+      {conditions ? (
+        <>
+          <p className="location-detail-card__timestamp">
+            Updated{' '}
+            <time
+              dateTime={conditions.updatedAt}
+              title={formatDateTime(conditions.updatedAt)}
+            >
+              {formatRelativeTime(conditions.updatedAt)}
+            </time>
+          </p>
 
-      <section className="location-detail-section" aria-labelledby="current-weather-title">
-        <div className="location-detail-section__heading">
-          <span>Latest observation</span>
-          <h3 id="current-weather-title">Current weather</h3>
-        </div>
-        <div className="weather-metric-grid">
-          <WeatherMetric label="Conditions" value={location.condition} />
-          <WeatherMetric label="Temperature" value={`${location.temperatureC}°C`} />
-          <WeatherMetric
-            label="Rainfall"
-            value={`${location.rainfall24hMm} mm`}
-            hint="Past 24 hours"
-          />
-          <WeatherMetric label="Humidity" value={`${location.humidityPercent}%`} />
-          <WeatherMetric label="Wind" value={`${location.windKph} km/h`} />
-        </div>
-      </section>
+          <section
+            className="location-detail-section"
+            aria-labelledby="current-weather-title"
+          >
+            <div className="location-detail-section__heading">
+              <span>Latest observation</span>
+              <h3 id="current-weather-title">Current weather</h3>
+            </div>
+            <div className="weather-metric-grid">
+              <WeatherMetric label="Conditions" value={conditions.condition} />
+              <WeatherMetric label="Temperature" value={`${conditions.temperatureC}°C`} />
+              <WeatherMetric
+                label="Rainfall"
+                value={`${conditions.rainfall24hMm} mm`}
+                hint="Past 24 hours"
+              />
+              <WeatherMetric label="Humidity" value={`${conditions.humidityPercent}%`} />
+              <WeatherMetric label="Wind" value={`${conditions.windKph} km/h`} />
+            </div>
+          </section>
 
-      <section className="prediction-panel" aria-labelledby="prediction-title">
-        <div className="prediction-panel__heading">
-          <DataPill value="AI_PREDICTION" />
-          <span>{location.prediction.confidencePercent}% confidence</span>
-        </div>
-        <h3 id="prediction-title">{location.prediction.label}</h3>
-        <p>{location.prediction.summary}</p>
-        <div
-          className="confidence-meter"
-          role="meter"
-          aria-label="Prediction confidence"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={location.prediction.confidencePercent}
-        >
-          <span
-            className="confidence-meter__fill"
-            style={{ width: `${location.prediction.confidencePercent}%` }}
-          />
-        </div>
-        <small>Decision-support estimate · not an official public warning</small>
-      </section>
+          <section className="prediction-panel" aria-labelledby="prediction-title">
+            <div className="prediction-panel__heading">
+              <DataPill value="AI_PREDICTION" />
+              <span>{conditions.prediction.confidencePercent}% confidence</span>
+            </div>
+            <h3 id="prediction-title">{conditions.prediction.label}</h3>
+            <p>{conditions.prediction.summary}</p>
+            <div
+              className="confidence-meter"
+              role="meter"
+              aria-label="Prediction confidence"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={conditions.prediction.confidencePercent}
+            >
+              <span
+                className="confidence-meter__fill"
+                style={{ width: `${conditions.prediction.confidencePercent}%` }}
+              />
+            </div>
+            <small>Decision-support estimate · not an official public warning</small>
+          </section>
+        </>
+      ) : (
+        <section className="prediction-panel" aria-labelledby="prediction-title">
+          <div className="prediction-panel__heading">
+            <DataPill value="NO_PREDICTION" />
+          </div>
+          <h3 id="prediction-title">No prediction available</h3>
+          <p>
+            There is no flood-risk prediction or weather observation for this
+            location yet.
+          </p>
+        </section>
+      )}
 
       <section
         className={`official-warning-panel${
-          location.officialWarning ? '' : ' official-warning-panel--clear'
+          conditions?.officialWarning ? '' : ' official-warning-panel--clear'
         }`}
         aria-labelledby="official-warning-title"
       >
         <DataPill
           value="OFFICIAL_WARNING"
-          label={location.officialWarning ? undefined : 'No official warning active'}
+          label={conditions?.officialWarning ? undefined : 'No official warning active'}
         />
         <h3 id="official-warning-title">
-          {location.officialWarning ? 'Official public warning' : 'Official status'}
+          {conditions?.officialWarning ? 'Official public warning' : 'Official status'}
         </h3>
         <p>
-          {location.officialWarning ??
+          {conditions?.officialWarning ??
             'No official Fiji MET warning is included for this location in the current demo data.'}
         </p>
       </section>
