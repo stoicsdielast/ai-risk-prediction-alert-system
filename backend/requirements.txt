@@ -57,3 +57,10 @@ uvicorn==0.52.3
 uvloop==0.22.1
 watchfiles==1.2.0
 websockets==17.0.1
+
+# Standalone AI training, evaluation, and inference
+pandas==3.0.6
+numpy==2.5.3
+scikit-learn==1.9.1
+joblib==1.6.0
+matplotlib==3.11.2
