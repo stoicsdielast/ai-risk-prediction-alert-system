@@ -31,6 +31,8 @@ ai/data/raw/
 ai/data/processed/
 ai/models/*.pkl
 ai/models/*.joblib
+backend/ai/models/*.joblib
+backend/ai/data/processed/*.csv
 
 # Cache
 .pytest_cache/
