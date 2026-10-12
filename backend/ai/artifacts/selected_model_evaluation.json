@@ -1,0 +1,48 @@
+{
+  "model_version": "flood-occurrence-prototype-v1-ea0924a7a36a-20261005T233946745926Z",
+  "testing_size": 2000,
+  "metrics": {
+    "accuracy": 0.509,
+    "precision": 0.5144278606965174,
+    "recall": 0.5113748763600395,
+    "f1": 0.5128968253968254,
+    "roc_auc": 0.502165762057209,
+    "classification_report": {
+      "Non-flood (0)": {
+        "precision": 0.5035175879396985,
+        "recall": 0.506572295247725,
+        "f1-score": 0.5050403225806451,
+        "support": 989.0
+      },
+      "Flood (1)": {
+        "precision": 0.5144278606965174,
+        "recall": 0.5113748763600395,
+        "f1-score": 0.5128968253968254,
+        "support": 1011.0
+      },
+      "accuracy": 0.509,
+      "macro avg": {
+        "precision": 0.5089727243181079,
+        "recall": 0.5089735858038822,
+        "f1-score": 0.5089685739887353,
+        "support": 2000.0
+      },
+      "weighted avg": {
+        "precision": 0.5090327308182705,
+        "recall": 0.509,
+        "f1-score": 0.5090117847542243,
+        "support": 2000.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        501,
+        488
+      ],
+      [
+        494,
+        517
+      ]
+    ]
+  }
+}

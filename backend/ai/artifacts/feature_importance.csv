@@ -1,0 +1,21 @@
+feature,importance
+numeric__River Discharge (m³/s),0.10103829355648011
+numeric__Humidity (%),0.1010268710151291
+numeric__Water Level (m),0.10056735575937462
+numeric__Temperature (°C),0.09999158032215284
+numeric__Elevation (m),0.0991774713594495
+numeric__Rainfall (mm),0.09843640973425041
+numeric__Latitude,0.09836472219334798
+numeric__Population Density,0.09833503772855325
+numeric__Longitude,0.09787805238445978
+numeric__Infrastructure,0.013962742154601138
+categorical__Soil Type_Peat,0.009665377335142989
+categorical__Soil Type_Silt,0.009598008723130436
+categorical__Land Cover_Desert,0.00944370188159861
+categorical__Soil Type_Loam,0.009362638876641852
+categorical__Soil Type_Clay,0.009359452031994522
+categorical__Land Cover_Forest,0.00912106460051713
+categorical__Soil Type_Sandy,0.00909392400679835
+categorical__Land Cover_Urban,0.009082543072270575
+categorical__Land Cover_Agricultural,0.00843799548167115
+categorical__Land Cover_Water Body,0.0080567577824358

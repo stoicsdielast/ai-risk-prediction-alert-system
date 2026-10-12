@@ -6,9 +6,11 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.routes import locations as locations_routes
+from ai.predict import probability_to_risk_level
 from app.db.seed_locations import DEMO_LOCATIONS, seed_demo_locations
 from app.models.location import Division, Location
-from app.models.prediction import PredictionSource, RiskLevel, RiskPrediction
+from app.models.prediction import Prediction
+from app.models.risk import RiskLevel
 from app.services.location_service import LocationServiceError
 
 
@@ -230,36 +232,40 @@ def _location_id(db, slug: str) -> int:
     return db.scalar(select(Location.id).where(Location.slug == slug))
 
 
-def _add_prediction(db, slug: str, **overrides) -> RiskPrediction:
+def _add_prediction(db, slug: str, **overrides) -> Prediction:
     values = {
         "location_id": _location_id(db, slug),
         "risk_level": RiskLevel.LOW,
-        "confidence_percent": 50,
-        "label": "Test prediction",
-        "summary": "Test summary",
-        "source": PredictionSource.MODEL,
+        "flood_probability": 0.1,
+        "model_version": "test-fixture-not-an-ml-result",
         **overrides,
     }
-    prediction = RiskPrediction(**values)
+    prediction = Prediction(**values)
     db.add(prediction)
     db.commit()
     return prediction
+
+
+def _sample_predictions(db, slug: str) -> list[Prediction]:
+    return list(
+        db.scalars(
+            select(Prediction).where(
+                Prediction.location_id == _location_id(db, slug),
+                Prediction.is_sample.is_(True),
+            )
+        )
+    )
 
 
 def test_location_with_sample_risk_is_labelled_as_sample(client: TestClient, seeded):
     response = client.get(f"{LOCATIONS_URL}/suva")
 
     prediction = response.json()["prediction"]
-    generated_at = prediction.pop("generated_at")
-    assert generated_at
+    assert prediction.pop("predicted_at")
     assert prediction == {
         "risk_level": "MODERATE",
-        "confidence_percent": 78,
-        "label": "Elevated urban flood potential",
-        "summary": (
-            "Drainage pressure may increase if rainfall persists for another 2–3 hours."
-        ),
-        "source": "SAMPLE",
+        "flood_probability": 0.38,
+        "model_version": "sample-demo-not-a-model-result",
         "is_sample": True,
     }
 
@@ -282,57 +288,89 @@ def test_list_includes_predictions_only_where_available(client: TestClient, seed
     assert {"navua", "rakiraki", "levuka", "vunisea"}.isdisjoint(with_prediction)
 
 
-def test_latest_prediction_is_returned(client: TestClient, seeded, db):
+def test_real_prediction_takes_priority_over_newer_sample(client: TestClient, seeded, db):
     _add_prediction(
         db,
         "suva",
-        risk_level=RiskLevel.VERY_HIGH,
-        generated_at=datetime.now(timezone.utc) + timedelta(hours=1),
+        risk_level=RiskLevel.HIGH,
+        flood_probability=0.6,
+        predicted_at=datetime.now(timezone.utc) - timedelta(days=1),
     )
 
     prediction = client.get(f"{LOCATIONS_URL}/suva").json()["prediction"]
 
-    assert prediction["risk_level"] == "VERY_HIGH"
-    assert prediction["source"] == "MODEL"
+    assert prediction["risk_level"] == "HIGH"
     assert prediction["is_sample"] is False
+
+
+def test_latest_real_prediction_is_returned(client: TestClient, seeded, db):
+    now = datetime.now(timezone.utc)
+    _add_prediction(db, "navua", predicted_at=now - timedelta(hours=2))
+    _add_prediction(
+        db,
+        "navua",
+        risk_level=RiskLevel.VERY_HIGH,
+        flood_probability=0.9,
+        predicted_at=now,
+    )
+
+    prediction = client.get(f"{LOCATIONS_URL}/navua").json()["prediction"]
+
+    assert prediction["risk_level"] == "VERY_HIGH"
+
+
+def test_inactive_locations_are_hidden(client: TestClient, seeded, db):
+    labasa = db.scalar(select(Location).where(Location.slug == "labasa"))
+    labasa.is_active = False
+    db.commit()
+
+    assert "Labasa" not in _names(client.get(LOCATIONS_URL))
+    assert client.get(f"{LOCATIONS_URL}/labasa").status_code == 404
+
+
+def test_seeding_reactivates_demo_locations(db):
+    seed_demo_locations(db)
+    labasa = db.scalar(select(Location).where(Location.slug == "labasa"))
+    labasa.is_active = False
+    db.commit()
+
+    seed_demo_locations(db)
+
+    db.refresh(labasa)
+    assert labasa.is_active is True
 
 
 def test_seeding_does_not_duplicate_sample_risks(db):
     first = seed_demo_locations(db)
     seed_demo_locations(db)
 
-    count = db.scalar(select(func.count(RiskPrediction.id)))
+    count = db.scalar(select(func.count(Prediction.id)))
     assert first.sample_risks == count
     assert count == sum(demo.sample_risk is not None for demo in DEMO_LOCATIONS)
 
 
-def test_seeding_keeps_model_predictions(db):
+def test_seeding_keeps_real_predictions(db):
     seed_demo_locations(db)
-    model_prediction = _add_prediction(db, "navua")
+    real_prediction = _add_prediction(db, "navua")
 
     seed_demo_locations(db)
 
-    assert db.get(RiskPrediction, model_prediction.id) is not None
+    assert db.get(Prediction, real_prediction.id) is not None
 
 
-def test_seeding_restores_edited_sample_risk(db):
+def test_seeding_restores_sample_risk_in_place(db):
     seed_demo_locations(db)
-    sample = db.scalar(
-        select(RiskPrediction).where(
-            RiskPrediction.location_id == _location_id(db, "nadi")
-        )
-    )
+    [sample] = _sample_predictions(db, "nadi")
     sample.risk_level = RiskLevel.LOW
+    sample.flood_probability = 0.01
     db.commit()
 
     seed_demo_locations(db)
 
-    restored = db.scalar(
-        select(RiskPrediction).where(
-            RiskPrediction.location_id == _location_id(db, "nadi")
-        )
-    )
+    [restored] = _sample_predictions(db, "nadi")
+    assert restored.id == sample.id
     assert restored.risk_level == RiskLevel.VERY_HIGH
+    assert restored.flood_probability == 0.91
 
 
 def test_demo_set_includes_locations_without_sample_risk():
@@ -340,9 +378,13 @@ def test_demo_set_includes_locations_without_sample_risk():
     assert any(demo.sample_risk is not None for demo in DEMO_LOCATIONS)
 
 
-@pytest.mark.parametrize("confidence", [-1, 101])
-def test_out_of_range_confidence_is_rejected(db, confidence):
-    seed_demo_locations(db)
-
-    with pytest.raises(IntegrityError):
-        _add_prediction(db, "navua", confidence_percent=confidence)
+@pytest.mark.parametrize(
+    "demo",
+    [demo for demo in DEMO_LOCATIONS if demo.sample_risk is not None],
+    ids=lambda demo: demo.slug,
+)
+def test_sample_risk_matches_ai_thresholds(demo):
+    assert (
+        probability_to_risk_level(demo.sample_risk.flood_probability)
+        == demo.sample_risk.risk_level.value
+    )

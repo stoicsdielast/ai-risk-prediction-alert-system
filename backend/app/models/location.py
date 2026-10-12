@@ -1,6 +1,8 @@
+"""Monitored locations: shown on the weather map and referenced by alerts."""
+
 from enum import Enum
 
-from sqlalchemy import CheckConstraint, Enum as SqlEnum, Float, String
+from sqlalchemy import Boolean, CheckConstraint, Enum as SqlEnum, Float, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -20,6 +22,7 @@ class Division(str, Enum):
 class Location(Base):
     __tablename__ = "locations"
     __table_args__ = (
+        CheckConstraint("length(trim(name)) > 0", name="ck_location_name"),
         CheckConstraint(
             "latitude >= -90 AND latitude <= 90",
             name="ck_locations_latitude_range",
@@ -46,3 +49,6 @@ class Location(Base):
     )
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("true"),
+    )

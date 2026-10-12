@@ -27,11 +27,9 @@ export function toMapLocation(
     riskLevel: prediction?.risk_level ?? null,
     prediction: prediction && {
       riskLevel: prediction.risk_level,
-      confidencePercent: prediction.confidence_percent,
-      label: prediction.label,
-      summary: prediction.summary,
+      floodProbabilityPercent: Math.round(prediction.flood_probability * 100),
       isSample: prediction.is_sample,
-      generatedAt: prediction.generated_at,
+      predictedAt: prediction.predicted_at,
     },
     conditions,
   }

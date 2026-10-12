@@ -1,0 +1,196 @@
+{
+  "model_version": "flood-occurrence-prototype-v1-ea0924a7a36a-20261005T233946745926Z",
+  "dataset": {
+    "rows": 10000,
+    "columns": 14,
+    "filename": "flood_risk_dataset_india.csv",
+    "sha256": "ea0924a7a36ab7c1d153fac6675c6cf72cd3d3d4373e1a0ad388676a01e3f88a"
+  },
+  "split": {
+    "train": 8000,
+    "test": 2000,
+    "random_state": 42,
+    "stratified": true
+  },
+  "models": {
+    "Logistic Regression": {
+      "accuracy": 0.5025,
+      "precision": 0.5078740157480315,
+      "recall": 0.5103857566765578,
+      "f1": 0.5091267883571781,
+      "roc_auc": 0.5021977659296775,
+      "classification_report": {
+        "Non-flood (0)": {
+          "precision": 0.4969512195121951,
+          "recall": 0.49443882709807885,
+          "f1-score": 0.49569183983781046,
+          "support": 989.0
+        },
+        "Flood (1)": {
+          "precision": 0.5078740157480315,
+          "recall": 0.5103857566765578,
+          "f1-score": 0.5091267883571781,
+          "support": 1011.0
+        },
+        "accuracy": 0.5025,
+        "macro avg": {
+          "precision": 0.5024126176301134,
+          "recall": 0.5024122918873184,
+          "f1-score": 0.5024093140974942,
+          "support": 2000.0
+        },
+        "weighted avg": {
+          "precision": 0.5024726930094104,
+          "recall": 0.5025,
+          "f1-score": 0.5024832063143507,
+          "support": 2000.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          489,
+          500
+        ],
+        [
+          495,
+          516
+        ]
+      ]
+    },
+    "Random Forest": {
+      "accuracy": 0.509,
+      "precision": 0.5144278606965174,
+      "recall": 0.5113748763600395,
+      "f1": 0.5128968253968254,
+      "roc_auc": 0.502165762057209,
+      "classification_report": {
+        "Non-flood (0)": {
+          "precision": 0.5035175879396985,
+          "recall": 0.506572295247725,
+          "f1-score": 0.5050403225806451,
+          "support": 989.0
+        },
+        "Flood (1)": {
+          "precision": 0.5144278606965174,
+          "recall": 0.5113748763600395,
+          "f1-score": 0.5128968253968254,
+          "support": 1011.0
+        },
+        "accuracy": 0.509,
+        "macro avg": {
+          "precision": 0.5089727243181079,
+          "recall": 0.5089735858038822,
+          "f1-score": 0.5089685739887353,
+          "support": 2000.0
+        },
+        "weighted avg": {
+          "precision": 0.5090327308182705,
+          "recall": 0.509,
+          "f1-score": 0.5090117847542243,
+          "support": 2000.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          501,
+          488
+        ],
+        [
+          494,
+          517
+        ]
+      ]
+    }
+  },
+  "selected_model": "Random Forest",
+  "selection_priority": [
+    "recall",
+    "f1",
+    "roc_auc",
+    "accuracy"
+  ],
+  "selection_reason": "Selected Random Forest by lexicographic priority: flood recall, F1, ROC-AUC, then accuracy. Winning values: recall=0.511375, f1=0.512897, roc_auc=0.502166, accuracy=0.509000. Exact ties keep model training order.",
+  "majority_class_reference": {
+    "class": 1,
+    "accuracy": 0.5055
+  },
+  "top_random_forest_features": [
+    {
+      "feature": "numeric__River Discharge (m³/s)",
+      "importance": 0.10103829355648011
+    },
+    {
+      "feature": "numeric__Humidity (%)",
+      "importance": 0.1010268710151291
+    },
+    {
+      "feature": "numeric__Water Level (m)",
+      "importance": 0.10056735575937462
+    },
+    {
+      "feature": "numeric__Temperature (°C)",
+      "importance": 0.09999158032215284
+    },
+    {
+      "feature": "numeric__Elevation (m)",
+      "importance": 0.0991774713594495
+    },
+    {
+      "feature": "numeric__Rainfall (mm)",
+      "importance": 0.09843640973425041
+    },
+    {
+      "feature": "numeric__Latitude",
+      "importance": 0.09836472219334798
+    },
+    {
+      "feature": "numeric__Population Density",
+      "importance": 0.09833503772855325
+    },
+    {
+      "feature": "numeric__Longitude",
+      "importance": 0.09787805238445978
+    },
+    {
+      "feature": "numeric__Infrastructure",
+      "importance": 0.013962742154601138
+    }
+  ],
+  "example_prediction": {
+    "sample": {
+      "source_row_index": 2448,
+      "input_data": {
+        "Latitude": 9.67177988377172,
+        "Longitude": 88.15399279574052,
+        "Rainfall (mm)": 293.09194881765575,
+        "Temperature (°C)": 25.503107027237363,
+        "Humidity (%)": 39.81842699010563,
+        "River Discharge (m³/s)": 4408.709417273239,
+        "Water Level (m)": 3.9016628090418815,
+        "Elevation (m)": 7378.938294018579,
+        "Population Density": 1700.207917909049,
+        "Infrastructure": 0,
+        "Land Cover": "Forest",
+        "Soil Type": "Silt"
+      },
+      "actual_label": 1,
+      "model_version": "flood-occurrence-prototype-v1-ea0924a7a36a-20261005T233946745926Z"
+    },
+    "prediction": {
+      "flood_probability": 0.42664285714285705,
+      "confidence_percent": 42.664285714285704,
+      "risk_level": "MODERATE",
+      "model_version": "flood-occurrence-prototype-v1-ea0924a7a36a-20261005T233946745926Z",
+      "predicted_at": "2026-10-05T23:39:48.034817+00:00"
+    }
+  },
+  "limitations": [
+    "Kaggle India development data; not official Fiji MET operational data.",
+    "Original dataset URL, collection method, units for binary flags and population density, and synthetic/observational provenance are unverified.",
+    "No timestamps: water level/discharge and other measurements cannot be verified as available before the outcome. No forecast lead time is established.",
+    "Historical Floods is excluded because its timing and meaning are unverified.",
+    "Random row splitting does not establish transfer to Fiji or performance on future events or unseen locations.",
+    "Same test split used for comparison/selection; no independent final validation.",
+    "Not calibrated; confidence_percent is only P(flood) times 100."
+  ]
+}

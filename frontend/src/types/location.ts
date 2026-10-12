@@ -2,17 +2,14 @@ import type { RiskLevel, WeatherLocation } from './prototype'
 
 export type DivisionCode = 'CENTRAL' | 'WESTERN' | 'NORTHERN' | 'EASTERN'
 
-export type PredictionSource = 'SAMPLE' | 'MODEL'
-
 /** A risk prediction as returned by the location API. */
 export interface ApiPrediction {
   risk_level: RiskLevel
-  confidence_percent: number
-  label: string
-  summary: string
-  source: PredictionSource
+  /** P(flood) from 0 to 1. Not a calibrated confidence score. */
+  flood_probability: number
+  model_version: string
   is_sample: boolean
-  generated_at: string
+  predicted_at: string
 }
 
 /** A location as returned by `GET /api/locations`. */
@@ -29,11 +26,9 @@ export interface ApiLocation {
 
 export interface MapPrediction {
   riskLevel: RiskLevel
-  confidencePercent: number
-  label: string
-  summary: string
+  floodProbabilityPercent: number
   isSample: boolean
-  generatedAt: string
+  predictedAt: string
 }
 
 /** A backend location prepared for the weather map. */

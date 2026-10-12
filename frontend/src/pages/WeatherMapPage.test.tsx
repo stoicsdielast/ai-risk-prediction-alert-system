@@ -27,12 +27,10 @@ const mockedGetLocations = vi.mocked(getLocations)
 function samplePrediction(overrides: Partial<ApiPrediction> = {}): ApiPrediction {
   return {
     risk_level: 'VERY_HIGH',
-    confidence_percent: 92,
-    label: 'Severe river flood potential',
-    summary: 'Rapid river response is likely.',
-    source: 'SAMPLE',
+    flood_probability: 0.91,
+    model_version: 'sample-demo-not-a-model-result',
     is_sample: true,
-    generated_at: '2026-10-13T00:00:00Z',
+    predicted_at: '2026-10-13T00:00:00Z',
     ...overrides,
   }
 }
@@ -65,8 +63,7 @@ const LOCATIONS: ApiLocation[] = [
     longitude: 179.371,
     prediction: samplePrediction({
       risk_level: 'LOW',
-      confidence_percent: 81,
-      label: 'Low flood potential',
+      flood_probability: 0.14,
     }),
   },
 ]
@@ -148,7 +145,8 @@ describe('WeatherMapPage', () => {
     const details = screen.getByRole('complementary')
     expect(within(details).getByRole('heading', { name: 'Nadi' })).toBeInTheDocument()
     expect(within(details).getByText('Sample risk')).toBeInTheDocument()
-    expect(within(details).getByText('Severe river flood potential')).toBeInTheDocument()
+    expect(within(details).getByText('Very high flood risk')).toBeInTheDocument()
+    expect(within(details).getByText('91% flood probability')).toBeInTheDocument()
     expect(
       within(details).getByText(/Labelled sample for testing/),
     ).toBeInTheDocument()

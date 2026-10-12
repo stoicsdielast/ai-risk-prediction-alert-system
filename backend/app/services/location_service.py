@@ -3,7 +3,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.models.location import Division, Location
-from app.models.prediction import RiskPrediction
+from app.models.prediction import Prediction
 
 
 class LocationNotFoundError(Exception):
@@ -20,7 +20,11 @@ def list_locations(
     division: Division | None = None,
     search: str | None = None,
 ) -> list[Location]:
-    query = select(Location).order_by(Location.name, Location.id)
+    query = (
+        select(Location)
+        .where(Location.is_active.is_(True))
+        .order_by(Location.name, Location.id)
+    )
 
     if division is not None:
         query = query.where(Location.division == division)
@@ -40,7 +44,12 @@ def list_locations(
 
 def get_location_by_slug(db: Session, slug: str) -> Location:
     try:
-        location = db.scalar(select(Location).where(Location.slug == slug))
+        location = db.scalar(
+            select(Location).where(
+                Location.slug == slug,
+                Location.is_active.is_(True),
+            )
+        )
     except SQLAlchemyError as exc:
         db.rollback()
         raise LocationServiceError from exc
@@ -53,18 +62,23 @@ def get_location_by_slug(db: Session, slug: str) -> Location:
 def latest_predictions(
     db: Session,
     location_ids: list[int],
-) -> dict[int, RiskPrediction]:
-    """Return the most recent prediction for each location that has one."""
+) -> dict[int, Prediction]:
+    """Return the prediction to show for each location that has one.
+
+    A real prediction always takes priority over a sample one; within each
+    kind, the most recent wins.
+    """
     if not location_ids:
         return {}
 
     query = (
-        select(RiskPrediction)
-        .where(RiskPrediction.location_id.in_(location_ids))
-        .order_by(RiskPrediction.generated_at, RiskPrediction.id)
+        select(Prediction)
+        .where(Prediction.location_id.in_(location_ids))
+        .order_by(Prediction.is_sample.desc(), Prediction.predicted_at, Prediction.id)
     )
     try:
-        # Later rows overwrite earlier ones, leaving the latest per location.
+        # Later rows overwrite earlier ones: samples sort first, so a real
+        # prediction replaces them, and the latest of each kind is kept.
         return {
             prediction.location_id: prediction
             for prediction in db.scalars(query)

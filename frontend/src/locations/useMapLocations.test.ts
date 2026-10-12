@@ -19,12 +19,10 @@ describe('toMapLocation', () => {
         ...navua,
         prediction: {
           risk_level: 'HIGH',
-          confidence_percent: 84,
-          label: 'High lowland flood potential',
-          summary: 'Summary',
-          source: 'SAMPLE',
+          flood_probability: 0.736,
+          model_version: 'sample-demo-not-a-model-result',
           is_sample: true,
-          generated_at: '2026-10-13T00:00:00Z',
+          predicted_at: '2026-10-13T00:00:00Z',
         },
       },
       null,
@@ -36,9 +34,9 @@ describe('toMapLocation', () => {
       riskLevel: 'HIGH',
       prediction: {
         riskLevel: 'HIGH',
-        confidencePercent: 84,
-        label: 'High lowland flood potential',
+        floodProbabilityPercent: 74,
         isSample: true,
+        predictedAt: '2026-10-13T00:00:00Z',
       },
     })
   })

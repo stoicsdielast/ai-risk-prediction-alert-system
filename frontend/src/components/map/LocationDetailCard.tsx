@@ -1,6 +1,14 @@
 import type { MapLocation, MapPrediction } from '../../types/location'
+import type { RiskLevel } from '../../types/prototype'
 import { formatDateTime, formatRelativeTime } from '../../utils/date'
 import { DataPill, RiskPill } from '../pills/DataPill'
+
+const RISK_HEADINGS: Record<RiskLevel, string> = {
+  LOW: 'Low flood risk',
+  MODERATE: 'Moderate flood risk',
+  HIGH: 'High flood risk',
+  VERY_HIGH: 'Very high flood risk',
+}
 
 interface LocationDetailCardProps {
   location: MapLocation | null
@@ -39,21 +47,30 @@ function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
     <section className="prediction-panel" aria-labelledby="prediction-title">
       <div className="prediction-panel__heading">
         <DataPill value={prediction.isSample ? 'SAMPLE_RISK' : 'AI_PREDICTION'} />
-        <span>{prediction.confidencePercent}% confidence</span>
+        <span>{prediction.floodProbabilityPercent}% flood probability</span>
       </div>
-      <h3 id="prediction-title">{prediction.label}</h3>
-      <p>{prediction.summary}</p>
+      <h3 id="prediction-title">{RISK_HEADINGS[prediction.riskLevel]}</h3>
+      <p>
+        Predicted{' '}
+        <time
+          dateTime={prediction.predictedAt}
+          title={formatDateTime(prediction.predictedAt)}
+        >
+          {formatRelativeTime(prediction.predictedAt)}
+        </time>
+        .
+      </p>
       <div
         className="confidence-meter"
         role="meter"
-        aria-label="Prediction confidence"
+        aria-label="Flood probability"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={prediction.confidencePercent}
+        aria-valuenow={prediction.floodProbabilityPercent}
       >
         <span
           className="confidence-meter__fill"
-          style={{ width: `${prediction.confidencePercent}%` }}
+          style={{ width: `${prediction.floodProbabilityPercent}%` }}
         />
       </div>
       <small>

@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.admin import router as admin_router
+from app.api.routes.alerts import admin_router as admin_alert_router
+from app.api.routes.alerts import public_router as public_alert_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.locations import router as locations_router
 
@@ -26,6 +28,8 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(admin_alert_router)
+app.include_router(public_alert_router)
 app.include_router(locations_router)
 
 
