@@ -1,6 +1,7 @@
 """Alert lifecycle tests use explicitly labelled fixtures, never operational predictions."""
 
 from datetime import datetime, timezone
+from itertools import count
 
 import pytest
 from sqlalchemy import func, select
@@ -9,7 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
 from app.models import (
-    AccountStatus, Alert, AlertSource, AlertStatus, Location, Prediction, RiskLevel, UserRole,
+    AccountStatus, Alert, AlertSource, AlertStatus, Division, Location, Prediction, RiskLevel,
+    UserRole,
 )
 from app.services import alert_service, notification_service
 
@@ -28,9 +30,14 @@ def admin(user_factory):
 
 @pytest.fixture
 def location_factory(session_factory):
+    slugs = (f"test-location-{number}" for number in count(1))
+
     def create(*, active=True, name="TEST ONLY — monitored location"):
         with session_factory() as db:
-            location = Location(name=name, is_active=active)
+            location = Location(
+                slug=next(slugs), name=name, division=Division.CENTRAL,
+                latitude=-18.14, longitude=178.44, is_active=active,
+            )
             db.add(location)
             db.commit()
             return location

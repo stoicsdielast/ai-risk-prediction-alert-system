@@ -18,6 +18,7 @@ See the [frontend prototype guide](../docs/PROTOTYPE_UI.md) for that boundary.
 - `GET /api/admin/users/pending`
 - `PATCH /api/admin/users/{user_id}/approve`
 - `PATCH /api/admin/users/{user_id}/reject`
+- `GET /api/locations`, `GET /api/locations/divisions`, `GET /api/locations/{slug}`
 - PostgreSQL user storage through SQLAlchemy
 - Dependency-injected database sessions
 - Email-format validation and lowercase normalization
@@ -159,10 +160,50 @@ This creates the following objects if they do not already exist:
 - `user_role` PostgreSQL enum
 - `account_status` PostgreSQL enum
 - unique index/constraint for `users.email`
+- `locations` table, `division` PostgreSQL enum, and coordinate range checks
 
 The initializer uses SQLAlchemy `create_all`, which creates missing objects but
 does not migrate an existing table when the model changes. Future schema
 changes should introduce Alembic migrations before deployment.
+
+## Load the Fiji demo locations
+
+From `backend` run:
+
+```bash
+python -m app.db.seed_locations
+```
+
+This creates the tables if needed and loads 12 demo locations covering all four
+divisions (Central, Western, Northern, Eastern). It is safe to run repeatedly:
+locations are matched by slug, so existing demo rows are reset to their demo
+coordinates and divisions, missing ones are added, and locations outside the
+demo set are left untouched. The list lives in `DEMO_LOCATIONS` in
+`app/db/seed_locations.py`.
+
+## Location API
+
+These read-only endpoints are public because the weather map is available
+without signing in.
+
+| Endpoint | Description |
+| --- | --- |
+| `GET /api/locations` | All locations ordered by name. Optional `division` (`CENTRAL`, `WESTERN`, `NORTHERN`, `EASTERN`) and `search` (case-insensitive partial name match, max 100 characters) query parameters |
+| `GET /api/locations/divisions` | The four divisions with display labels |
+| `GET /api/locations/{slug}` | One location, or `404 Location not found` |
+
+Example location:
+
+```json
+{
+  "slug": "suva",
+  "name": "Suva",
+  "division": "CENTRAL",
+  "division_label": "Central Division",
+  "latitude": -18.1416,
+  "longitude": 178.4419
+}
+```
 
 ## Run the backend
 

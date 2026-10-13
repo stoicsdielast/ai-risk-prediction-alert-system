@@ -2,7 +2,16 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, String, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -30,6 +39,11 @@ class Prediction(Base):
     model_version: Mapped[str] = mapped_column(String(255), nullable=False)
     predicted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc),
+    )
+    # True for hand-written demo values loaded by app.db.seed_locations. Sample
+    # rows are for testing the map and are never real model output.
+    is_sample: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false"),
     )
     location: Mapped[Location] = relationship()
 

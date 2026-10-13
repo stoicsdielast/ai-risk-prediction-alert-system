@@ -3,10 +3,11 @@ import { LocationDetailCard } from '../components/map/LocationDetailCard'
 import { WeatherMap } from '../components/map/WeatherMap'
 import { RiskPill } from '../components/pills/DataPill'
 import { PageHeader } from '../components/layout/PageHeader'
-import { usePrototypeData } from '../prototype/usePrototypeData'
+import { useMapLocations } from '../locations/useMapLocations'
+import type { MapLocation } from '../types/location'
 import type { RiskLevel } from '../types/prototype'
 
-type RiskFilter = 'ALL' | RiskLevel
+type RiskFilter = 'ALL' | RiskLevel | 'NONE'
 
 const RISK_FILTERS: Array<{ value: RiskFilter; label: string }> = [
   { value: 'ALL', label: 'All risks' },
@@ -14,18 +15,23 @@ const RISK_FILTERS: Array<{ value: RiskFilter; label: string }> = [
   { value: 'MODERATE', label: 'Moderate' },
   { value: 'HIGH', label: 'High' },
   { value: 'VERY_HIGH', label: 'Very high' },
+  { value: 'NONE', label: 'No prediction' },
 ]
 
+function matchesRiskFilter(location: MapLocation, filter: RiskFilter) {
+  if (filter === 'ALL') return true
+  if (filter === 'NONE') return location.riskLevel === null
+  return location.riskLevel === filter
+}
+
 export function WeatherMapPage() {
-  const { locations } = usePrototypeData()
+  const { status, error, locations, retry } = useMapLocations()
   const [searchQuery, setSearchQuery] = useState('')
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('ALL')
-  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
-    () =>
-      locations.find((location) => location.riskLevel === 'VERY_HIGH')?.id ??
-      locations[0]?.id ??
-      null,
-  )
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+
+  const isReady = status === 'ready'
+  const hasNoLocations = isReady && locations.length === 0
 
   const filteredLocations = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -35,10 +41,8 @@ export function WeatherMapPage() {
         !normalizedQuery ||
         location.name.toLowerCase().includes(normalizedQuery) ||
         location.division.toLowerCase().includes(normalizedQuery)
-      const matchesRisk =
-        riskFilter === 'ALL' || location.riskLevel === riskFilter
 
-      return matchesSearch && matchesRisk
+      return matchesSearch && matchesRiskFilter(location, riskFilter)
     })
   }, [locations, riskFilter, searchQuery])
 
@@ -51,7 +55,14 @@ export function WeatherMapPage() {
     const selectionIsVisible = filteredLocations.some(
       (location) => location.id === selectedLocationId,
     )
-    if (!selectionIsVisible) setSelectedLocationId(filteredLocations[0].id)
+    if (!selectionIsVisible) {
+      setSelectedLocationId(
+        (
+          filteredLocations.find((location) => location.riskLevel === 'VERY_HIGH') ??
+          filteredLocations[0]
+        ).id,
+      )
+    }
   }, [filteredLocations, selectedLocationId])
 
   const selectedLocation =
@@ -68,7 +79,7 @@ export function WeatherMapPage() {
       <PageHeader
         eyebrow="National monitoring view"
         title="Weather & flood-risk map"
-        description="Explore prototype weather observations and AI flood-risk signals across monitored Fiji locations."
+        description="Explore monitored Fiji locations with labelled sample flood risks and prototype weather observations."
       />
 
       <section className="map-toolbar" aria-label="Map search and filters">
@@ -82,6 +93,7 @@ export function WeatherMapPage() {
               value={searchQuery}
               placeholder="Search Suva, Nadi, Western Division…"
               autoComplete="off"
+              disabled={!isReady}
               onChange={(event) => setSearchQuery(event.target.value)}
             />
           </div>
@@ -95,12 +107,9 @@ export function WeatherMapPage() {
             aria-labelledby="risk-filter-label"
           >
             {RISK_FILTERS.map((filter) => {
-              const count =
-                filter.value === 'ALL'
-                  ? locations.length
-                  : locations.filter(
-                      (location) => location.riskLevel === filter.value,
-                    ).length
+              const count = locations.filter((location) =>
+                matchesRiskFilter(location, filter.value),
+              ).length
 
               return (
                 <button
@@ -110,10 +119,11 @@ export function WeatherMapPage() {
                     riskFilter === filter.value ? ' is-active' : ''
                   }`}
                   aria-pressed={riskFilter === filter.value}
+                  disabled={!isReady}
                   onClick={() => setRiskFilter(filter.value)}
                 >
                   {filter.label}
-                  <span>{count}</span>
+                  <span>{isReady ? count : '–'}</span>
                 </button>
               )
             })}
@@ -122,27 +132,65 @@ export function WeatherMapPage() {
       </section>
 
       <div className="weather-map-layout">
-        <section className="weather-map-card" aria-labelledby="map-results-title">
+        <section
+          className="weather-map-card"
+          aria-labelledby="map-results-title"
+          aria-busy={status === 'loading'}
+        >
           <header className="weather-map-card__header">
             <div>
-              <span>Prototype map view</span>
+              <span>Monitored locations</span>
               <h2 id="map-results-title">
-                {filteredLocations.length}{' '}
-                {filteredLocations.length === 1 ? 'location' : 'locations'} shown
+                {isReady
+                  ? `${filteredLocations.length} ${
+                      filteredLocations.length === 1 ? 'location' : 'locations'
+                    } shown`
+                  : 'Fiji map'}
               </h2>
             </div>
-            {filtersAreActive && (
+            {isReady && filtersAreActive && (
               <button type="button" className="map-clear-button" onClick={clearFilters}>
                 Clear filters
               </button>
             )}
           </header>
 
-          <WeatherMap
-            locations={filteredLocations}
-            selectedLocationId={selectedLocationId}
-            onSelectLocation={setSelectedLocationId}
-          />
+          {status === 'loading' && (
+            <div className="weather-map-empty weather-map-empty--loading" role="status">
+              <span className="weather-map-empty__mark" aria-hidden="true">
+                ⟳
+              </span>
+              <h2>Loading monitored locations…</h2>
+              <p>Fetching locations and the latest flood-risk predictions.</p>
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div className="weather-map-empty" role="alert">
+              <span className="weather-map-empty__mark" aria-hidden="true">!</span>
+              <h2>Locations could not be loaded</h2>
+              <p>{error}</p>
+              <button type="button" className="map-clear-button" onClick={retry}>
+                Try again
+              </button>
+            </div>
+          )}
+
+          {hasNoLocations && (
+            <div className="weather-map-empty" role="status">
+              <span className="weather-map-empty__mark" aria-hidden="true">0</span>
+              <h2>No monitored locations yet</h2>
+              <p>Locations will appear here once they have been set up.</p>
+            </div>
+          )}
+
+          {isReady && !hasNoLocations && (
+            <WeatherMap
+              locations={filteredLocations}
+              selectedLocationId={selectedLocationId}
+              onSelectLocation={setSelectedLocationId}
+            />
+          )}
 
           {filteredLocations.length > 0 && (
             <div className="map-location-list" aria-label="Visible monitored locations">
@@ -167,12 +215,25 @@ export function WeatherMapPage() {
           )}
         </section>
 
-        <LocationDetailCard location={selectedLocation} />
+        {isReady ? (
+          <LocationDetailCard location={selectedLocation} />
+        ) : (
+          <aside className="location-detail-card location-detail-card--empty">
+            <span className="location-detail-card__empty-mark" aria-hidden="true">⌖</span>
+            <h2>Location details</h2>
+            <p>
+              {status === 'loading'
+                ? 'Details will appear once locations have loaded.'
+                : 'Details are unavailable until locations can be loaded.'}
+            </p>
+          </aside>
+        )}
       </div>
 
       <p className="weather-map-disclaimer">
-        Prototype weather and prediction data are illustrative. Always follow current
-        official Fiji Meteorological Service warnings and emergency instructions.
+        Sample risks are labelled test data and weather observations are illustrative.
+        Always follow current official Fiji Meteorological Service warnings and
+        emergency instructions.
       </p>
     </div>
   )

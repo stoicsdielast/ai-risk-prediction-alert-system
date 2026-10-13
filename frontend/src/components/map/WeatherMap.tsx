@@ -8,7 +8,8 @@ import {
   useMap,
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { RiskLevel, WeatherLocation } from '../../types/prototype'
+import type { MapLocation } from '../../types/location'
+import type { RiskLevel } from '../../types/prototype'
 import { RiskPill } from '../pills/DataPill'
 
 const FIJI_CENTRE: [number, number] = [-17.76, 178.35]
@@ -21,18 +22,24 @@ const RISK_LABELS: Record<RiskLevel, string> = {
 }
 
 interface WeatherMapProps {
-  locations: WeatherLocation[]
+  locations: MapLocation[]
   selectedLocationId: string | null
   onSelectLocation: (locationId: string) => void
 }
 
 interface MapViewportProps {
-  locations: WeatherLocation[]
-  selectedLocation: WeatherLocation | null
+  locations: MapLocation[]
+  selectedLocation: MapLocation | null
 }
 
-function markerIcon(riskLevel: RiskLevel, isSelected: boolean) {
-  const riskClass = riskLevel.toLowerCase().replace('_', '-')
+function riskDescription({ prediction }: MapLocation) {
+  if (!prediction) return 'No prediction available'
+  const description = `${RISK_LABELS[prediction.riskLevel]} flood risk`
+  return prediction.isSample ? `${description} (sample)` : description
+}
+
+function markerIcon(riskLevel: RiskLevel | null, isSelected: boolean) {
+  const riskClass = riskLevel?.toLowerCase().replace('_', '-') ?? 'none'
 
   return divIcon({
     className: 'weather-map-marker-shell',
@@ -126,7 +133,7 @@ export function WeatherMap({
             key={location.id}
             position={[location.latitude, location.longitude]}
             icon={markerIcons.get(location.id)}
-            title={`${location.name} — ${RISK_LABELS[location.riskLevel]} risk`}
+            title={`${location.name} — ${riskDescription(location)}`}
             riseOnHover
             eventHandlers={{
               click: () => onSelectLocation(location.id),
@@ -135,7 +142,7 @@ export function WeatherMap({
             <Tooltip direction="top" opacity={1}>
               <span className="weather-map-tooltip">
                 <strong>{location.name}</strong>
-                <small>{RISK_LABELS[location.riskLevel]} flood risk</small>
+                <small>{riskDescription(location)}</small>
               </span>
             </Tooltip>
           </Marker>
@@ -154,6 +161,7 @@ export function WeatherMap({
           <RiskPill risk="MODERATE" compact />
           <RiskPill risk="HIGH" compact />
           <RiskPill risk="VERY_HIGH" compact />
+          <RiskPill risk={null} compact />
         </div>
       </div>
     </div>
