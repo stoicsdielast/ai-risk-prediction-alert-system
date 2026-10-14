@@ -1,10 +1,13 @@
 from app import models  # noqa: F401 -- registers models with Base metadata
 from app.db.base import Base
+from app.db.migrate_locations import upgrade_location_schema
 from app.db.session import get_engine
 
 
 def create_tables() -> None:
-    Base.metadata.create_all(bind=get_engine())
+    with get_engine().begin() as connection:
+        upgrade_location_schema(connection)
+        Base.metadata.create_all(bind=connection)
 
 
 if __name__ == "__main__":

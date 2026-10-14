@@ -51,7 +51,7 @@ def location(location_factory):
 
 @pytest.fixture
 def prediction_factory(session_factory, location):
-    def create(risk=RiskLevel.HIGH, *, location_id=None):
+    def create(risk=RiskLevel.HIGH, *, location_id=None, is_sample=False):
         # Controlled fixtures exercise threshold branches; no ML results are invented.
         probability = {
             RiskLevel.LOW: 0.1, RiskLevel.MODERATE: 0.3,
@@ -62,6 +62,7 @@ def prediction_factory(session_factory, location):
                 location_id=location_id or location.id, risk_level=risk,
                 flood_probability=probability, model_version="test-fixture-not-an-ml-result",
                 predicted_at=datetime.now(timezone.utc),
+                is_sample=is_sample,
             )
             db.add(prediction)
             db.commit()
@@ -109,6 +110,72 @@ def test_lower_risk_prediction_does_not_create_alert(client, admin, prediction_f
     assert response.json() is None
     with session_factory() as db:
         assert db.scalar(select(func.count()).select_from(Alert)) == 0
+
+
+@pytest.mark.parametrize("risk", list(RiskLevel))
+def test_sample_prediction_cannot_create_recommendation(
+    client, admin, prediction_factory, session_factory, risk,
+):
+    prediction = prediction_factory(risk, is_sample=True)
+    response = client.post(f"{ADMIN_URL}/from-prediction/{prediction.id}", headers=authorization(admin))
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Sample predictions cannot be used for alerts"}
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 0
+        assert db.get(Prediction, prediction.id).is_sample is True
+
+
+def test_sample_flag_is_read_from_storage(session_factory, prediction_factory):
+    prediction = prediction_factory(is_sample=True)
+    prediction.is_sample = False
+    with session_factory() as db:
+        with pytest.raises(alert_service.InvalidAlertDataError, match="Sample predictions"):
+            alert_service.create_alert_from_prediction(db, prediction)
+        assert db.scalar(select(func.count()).select_from(Alert)) == 0
+
+
+def test_sample_prediction_cannot_be_attached_to_manual_alert(
+    client, admin, prediction_factory, session_factory,
+):
+    prediction = prediction_factory(is_sample=True)
+    response = client.post(ADMIN_URL, headers=authorization(admin), json={
+        "location_id": prediction.location_id, "prediction_id": prediction.id,
+        "severity": "HIGH", "message": "Test-only sample must not become a warning",
+    })
+    assert response.status_code == 400
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 0
+
+
+@pytest.mark.parametrize("source", list(AlertSource))
+def test_old_sample_alert_cannot_be_approved_or_published(
+    client, admin, prediction_factory, session_factory, monkeypatch, source,
+):
+    prediction = prediction_factory(is_sample=True)
+    calls = []
+    monkeypatch.setattr(notification_service, "notify_users_for_approved_alert", lambda alert: calls.append(alert.id))
+    with session_factory() as db:
+        alert = Alert(
+            location_id=prediction.location_id, prediction_id=prediction.id,
+            severity=RiskLevel.HIGH, source=source, status=AlertStatus.PENDING,
+            message="Test-only legacy sample alert", created_by_user_id=admin.id,
+        )
+        db.add(alert)
+        db.commit()
+        alert_id = alert.id
+    response = client.patch(f"{ADMIN_URL}/{alert_id}/approve", headers=authorization(admin))
+    assert response.status_code == 400
+    assert calls == []
+    with session_factory() as db:
+        alert = db.get(Alert, alert_id)
+        assert alert.status == AlertStatus.PENDING
+        assert alert.approved_at is None
+        # Simulate an alert approved before the sample guard was installed.
+        alert.status = AlertStatus.APPROVED
+        alert.approved_by_user_id = admin.id
+        alert.approved_at = datetime.now(timezone.utc)
+        db.commit()
+    assert client.get(PUBLIC_URL).json() == []
 
 
 def test_repeated_ai_request_reuses_existing_alert(client, admin, prediction_factory, session_factory):

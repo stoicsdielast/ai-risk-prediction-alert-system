@@ -100,6 +100,11 @@ def _prediction(db: Session, prediction_id: int) -> Prediction:
     return prediction
 
 
+def _require_real_prediction(prediction: Prediction) -> None:
+    if prediction.is_sample:
+        raise InvalidAlertDataError("Sample predictions cannot be used for alerts")
+
+
 def _get_alert(db: Session, alert_id: int, *, lock: bool = False) -> Alert:
     query = select(Alert).where(Alert.id == alert_id).execution_options(populate_existing=True)
     if lock:
@@ -141,6 +146,7 @@ def create_alert_from_prediction(db: Session, prediction: Prediction) -> Alert |
     if prediction.id is None:
         raise InvalidAlertDataError("Save and flush the prediction before creating its alert")
     stored = _prediction(db, prediction.id)
+    _require_real_prediction(stored)
     if stored.risk_level not in HIGH_RISK_LEVELS:
         return None
     existing = _existing_alert(db, stored)
@@ -184,6 +190,7 @@ def create_manual_alert(db: Session, data: ManualAlertCreate, admin: User) -> Al
     # Keep the same lock ordering as automatic creation (prediction before location).
     if data.prediction_id is not None:
         prediction = _prediction(db, data.prediction_id)
+        _require_real_prediction(prediction)
         if prediction.location_id != data.location_id:
             raise InvalidAlertDataError("Prediction belongs to a different location")
         if _existing_alert(db, prediction) is not None:
@@ -239,6 +246,8 @@ def update_alert(db: Session, alert_id: int, data: AlertUpdate, admin: User) -> 
 def approve_alert(db: Session, alert_id: int, admin: User) -> Alert:
     alert = _get_alert(db, alert_id, lock=True)
     ensure_transition(alert, AlertStatus.APPROVED)
+    if alert.prediction_id is not None:
+        _require_real_prediction(_prediction(db, alert.prediction_id))
     _active_location(db, alert.location_id)
     if not isinstance(alert.message, str) or not alert.message.strip() or len(alert.message) > 4000:
         raise InvalidAlertDataError("Alert requires a nonblank message of at most 4000 characters")
@@ -288,5 +297,6 @@ def get_public_alerts(db: Session, *, offset: int = 0, limit: int = 100) -> list
     return list(db.scalars(
         select(Alert).join(Location, Alert.location_id == Location.id)
         .where(Alert.status == AlertStatus.APPROVED, Location.is_active.is_(True))
+        .where(~Alert.prediction.has(Prediction.is_sample.is_(True)))
         .order_by(Alert.approved_at.desc(), Alert.id.desc()).offset(offset).limit(limit)
     ))
