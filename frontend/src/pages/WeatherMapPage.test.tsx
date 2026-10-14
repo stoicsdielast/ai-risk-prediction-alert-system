@@ -37,6 +37,7 @@ function samplePrediction(overrides: Partial<ApiPrediction> = {}): ApiPrediction
 
 const LOCATIONS: ApiLocation[] = [
   {
+    id: 1,
     slug: 'nadi',
     name: 'Nadi',
     division: 'WESTERN',
@@ -46,6 +47,7 @@ const LOCATIONS: ApiLocation[] = [
     prediction: samplePrediction(),
   },
   {
+    id: 2,
     slug: 'navua',
     name: 'Navua',
     division: 'CENTRAL',
@@ -55,6 +57,7 @@ const LOCATIONS: ApiLocation[] = [
     prediction: null,
   },
   {
+    id: 3,
     slug: 'labasa',
     name: 'Labasa',
     division: 'NORTHERN',
@@ -143,7 +146,7 @@ describe('WeatherMapPage', () => {
     await screen.findByText('3 locations shown')
 
     const details = screen.getByRole('complementary')
-    expect(within(details).getByRole('heading', { name: 'Nadi' })).toBeInTheDocument()
+    expect(await within(details).findByRole('heading', { name: 'Nadi' })).toBeInTheDocument()
     expect(within(details).getByText('Sample risk')).toBeInTheDocument()
     expect(within(details).getByText('Very high flood risk')).toBeInTheDocument()
     expect(within(details).getByText('91% flood probability')).toBeInTheDocument()

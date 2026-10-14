@@ -202,6 +202,9 @@ export function WelcomePage() {
               <span className="landing-feature-card__pill">Flood alerts</span>
               <h3>Community Alerts</h3>
               <p>Stay informed about approved flood-risk warnings.</p>
+              <Link className="landing-feature-card__link" to="/alerts">
+                View community alerts <span aria-hidden="true">→</span>
+              </Link>
             </article>
           </div>
         </div>

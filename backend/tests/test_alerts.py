@@ -79,6 +79,29 @@ def manual_alert(client, admin, location_id, **extra):
     return response.json()
 
 
+def test_location_picker_id_supports_persisted_manual_alert_workflow(client, admin, location):
+    locations = client.get("/api/locations").json()
+    selected = next(item for item in locations if item["name"] == location.name)
+    assert selected["id"] == location.id
+    alert = manual_alert(client, admin, selected["id"])
+    url = f"{ADMIN_URL}/{alert['id']}"
+    changed = client.patch(url, headers=authorization(admin), json={
+        "message": "Test-only community warning", "severity": "VERY_HIGH",
+    })
+    assert changed.status_code == 200
+    assert client.get(url, headers=authorization(admin)).json()["message"] == "Test-only community warning"
+    assert client.patch(url + "/approve", headers=authorization(admin)).status_code == 200
+    public = client.get(PUBLIC_URL).json()
+    assert len(public) == 1
+    assert public[0]["location"]["id"] == selected["id"]
+    assert public[0]["severity"] == "VERY_HIGH"
+    assert public[0]["created_at"] and public[0]["approved_at"]
+    assert client.patch(url + "/suppress", headers=authorization(admin), json={
+        "reason": "Test-only withdrawal",
+    }).status_code == 200
+    assert client.get(PUBLIC_URL).json() == []
+
+
 @pytest.mark.parametrize("risk", [RiskLevel.HIGH, RiskLevel.VERY_HIGH])
 def test_high_risk_prediction_creates_only_pending_recommendation(
     client, admin, prediction_factory, risk, monkeypatch,

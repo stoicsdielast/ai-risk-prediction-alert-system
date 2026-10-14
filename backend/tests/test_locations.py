@@ -41,6 +41,7 @@ def test_list_locations_returns_coordinates_and_division(client: TestClient, see
     assert len(response.json()) == len(DEMO_LOCATIONS)
     suva = next(item for item in response.json() if item["slug"] == "suva")
     suva.pop("prediction")
+    assert isinstance(suva.pop("id"), int)
     assert suva == {
         "slug": "suva",
         "name": "Suva",

@@ -1,113 +1,94 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
+import { ALERT_STATUSES, createAlert, editAlert, reviewAlert } from '../api/alerts'
+import { ApiError } from '../api/client'
+import { useAdminAlerts, useAdminRequest } from '../alerts/useAlertFeed'
+import { useAuth } from '../auth/useAuth'
 import { Alert } from '../components/Alert'
+import { AlertEditor } from '../components/alerts/AlertEditor'
+import { AlertFeedStatus } from '../components/alerts/AlertFeedStatus'
 import { PageHeader } from '../components/layout/PageHeader'
-import { DataPill, RiskPill, StatusPill } from '../components/pills/DataPill'
-import { usePrototypeData } from '../prototype/usePrototypeData'
-import type { AlertRecord, AlertStatus } from '../types/prototype'
+import { RiskPill, StatusPill } from '../components/pills/DataPill'
+import type { AdminAlert, AlertAction, AlertDraft } from '../types/alert'
+import type { AlertStatus } from '../types/prototype'
 import { formatDateTime, formatRelativeTime } from '../utils/date'
 
-type AlertFilter = 'ALL' | AlertStatus
-
-const FILTERS: Array<{ value: AlertFilter; label: string }> = [
-  { value: 'ALL', label: 'All' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'APPROVED', label: 'Approved' },
-  { value: 'REJECTED', label: 'Rejected' },
-  { value: 'SUPPRESSED', label: 'Suppressed' },
-]
-
-const ACTION_COPY: Record<
-  Extract<AlertStatus, 'APPROVED' | 'REJECTED' | 'SUPPRESSED'>,
-  { present: string; progress: string; past: string }
-> = {
-  APPROVED: { present: 'Approve', progress: 'Approving…', past: 'approved' },
-  REJECTED: { present: 'Reject', progress: 'Rejecting…', past: 'rejected' },
-  SUPPRESSED: { present: 'Suppress', progress: 'Suppressing…', past: 'suppressed' },
-}
-
-function alertSourceValue(alert: AlertRecord) {
-  return alert.source === 'AI_RECOMMENDATION'
-    ? ('AI_PREDICTION' as const)
-    : ('OFFICIAL_WARNING' as const)
-}
-
 export function AlertsDashboardPage() {
-  const { alerts, updateAlertStatus } = usePrototypeData()
-  const [filter, setFilter] = useState<AlertFilter>('ALL')
+  const { token } = useAuth()
+  const feed = useAdminAlerts()
+  const request = useAdminRequest()
+  const [filter, setFilter] = useState<'ALL' | AlertStatus>('ALL')
   const [search, setSearch] = useState('')
-  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(
-    alerts[0]?.id ?? null,
-  )
-  const [actionStatus, setActionStatus] = useState<AlertStatus | null>(null)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [editor, setEditor] = useState<AdminAlert | 'new' | null>(null)
+  const [busy, setBusy] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [reason, setReason] = useState('')
+  const alerts = feed.data ?? []
+  const query = search.trim().toLowerCase()
+  const filtered = alerts.filter(
+    (alert) =>
+      (filter === 'ALL' || alert.status === filter) &&
+      `${alert.id} ${alert.location.name} ${alert.message}`.toLowerCase().includes(query),
+  )
+  const selected = filtered.find((alert) => alert.id === selectedId) ?? filtered[0] ?? null
 
-  const filteredAlerts = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase()
-
-    return alerts.filter((alert) => {
-      const matchesStatus = filter === 'ALL' || alert.status === filter
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        alert.locationName.toLowerCase().includes(normalizedSearch) ||
-        alert.id.toLowerCase().includes(normalizedSearch) ||
-        alert.message.toLowerCase().includes(normalizedSearch)
-
-      return matchesStatus && matchesSearch
-    })
-  }, [alerts, filter, search])
-
-  const selectedAlert =
-    filteredAlerts.find((alert) => alert.id === selectedAlertId) ??
-    filteredAlerts[0] ??
-    null
-
-  const filterCount = (value: AlertFilter) =>
-    value === 'ALL'
-      ? alerts.length
-      : alerts.filter((alert) => alert.status === value).length
-
-  const selectAlert = (alertId: string) => {
-    setSelectedAlertId(alertId)
-    setSuccess(null)
+  const mutate = async (operation: () => Promise<AdminAlert>, message: string) => {
+    if (busy) return
+    setBusy(true)
     setError(null)
-  }
-
-  const changeAlertStatus = async (
-    targetStatus: Extract<AlertStatus, 'APPROVED' | 'REJECTED' | 'SUPPRESSED'>,
-  ) => {
-    if (!selectedAlert || actionStatus) return
-
-    const copy = ACTION_COPY[targetStatus]
-    const confirmed = window.confirm(
-      `${copy.present} ${selectedAlert.id} for ${selectedAlert.locationName}?\n\n` +
-        'This prototype action updates local demo data only and resets when the page reloads.',
-    )
-    if (!confirmed) return
-
-    setActionStatus(targetStatus)
     setSuccess(null)
-    setError(null)
-
     try {
-      const updatedAlert = await updateAlertStatus(selectedAlert.id, targetStatus)
-      setSuccess(
-        `${updatedAlert.id} was ${copy.past}. This demo-only change is not saved to the backend.`,
-      )
-    } catch (caughtError) {
+      const updated = await request(operation)
+      feed.setData((current) => [
+        updated,
+        ...(current ?? []).filter((alert) => alert.id !== updated.id),
+      ])
+      setSelectedId(updated.id)
+      setEditor(null)
+      setReason('')
+      setSuccess(message)
+      feed.refresh()
+    } catch (caught) {
       setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Unable to update this alert. Please try again.',
+        caught instanceof Error ? caught.message : 'Unable to save this alert. Please try again.',
       )
+      if (caught instanceof ApiError && (caught.status === 409 || caught.status === 404)) {
+        feed.refresh()
+      }
     } finally {
-      setActionStatus(null)
+      setBusy(false)
     }
   }
 
-  const resetFilters = () => {
-    setFilter('ALL')
-    setSearch('')
+  const save = async (draft: AlertDraft) => {
+    if (!token || !editor) return
+    await mutate(
+      () =>
+        editor === 'new'
+          ? createAlert(token, draft)
+          : editAlert(token, editor.id, { severity: draft.severity, message: draft.message }),
+      editor === 'new' ? 'Alert draft created.' : 'Alert changes saved.',
+    )
+  }
+
+  const review = (action: AlertAction) => {
+    if (!token || !selected || busy) return
+    if (action === 'suppress' && !reason.trim()) {
+      setError('Enter a reason before suppressing this alert.')
+      return
+    }
+    const verb = { approve: 'Approve', reject: 'Reject', suppress: 'Suppress' }[action]
+    if (
+      !window.confirm(
+        `${verb} alert #${selected.id} for ${selected.location.name}?${action === 'approve' ? ' It will be visible to the community.' : ''}`,
+      )
+    )
+      return
+    void mutate(
+      () => reviewAlert(token, selected.id, action, reason),
+      `Alert #${selected.id} ${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'suppressed'}.`,
+    )
   }
 
   return (
@@ -115,50 +96,67 @@ export function AlertsDashboardPage() {
       <PageHeader
         eyebrow="MET alert operations"
         title="Alert management"
-        description="Review AI recommendations and manage which flood alerts are ready for public use."
+        description="Create drafts, review recommendations and manage published community alerts."
+        actions={
+          <button
+            className="button button--primary"
+            disabled={busy}
+            onClick={() => {
+              setEditor('new')
+              setError(null)
+              setSuccess(null)
+            }}
+          >
+            New alert
+          </button>
+        }
       />
-
-      <div className="prototype-notice" role="note">
-        <span aria-hidden="true">i</span>
-        <p>
-          <strong>Prototype workflow:</strong> alert actions update this browser session
-          only. No alert-management API or database persistence is connected yet.
-        </p>
-      </div>
-
+      <AlertFeedStatus {...feed} />
       {error && <Alert tone="error">{error}</Alert>}
       {success && <Alert tone="success">{success}</Alert>}
+      {editor && (
+        <AlertEditor
+          key={editor === 'new' ? 'new' : editor.id}
+          alert={editor === 'new' ? undefined : editor}
+          busy={busy}
+          onSave={save}
+          onCancel={() => setEditor(null)}
+        />
+      )}
 
       <section className="alert-toolbar" aria-label="Alert filters">
         <label className="alert-search">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
-            <path
-              d="m16 16 4 4"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
           <input
             type="search"
             aria-label="Search alerts"
-            value={search}
             placeholder="Search location, ID or message"
-            onChange={(event) => setSearch(event.target.value)}
+            value={search}
+            disabled={busy}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setReason('')
+            }}
           />
         </label>
-
         <div className="filter-pills" aria-label="Filter by alert status">
-          {FILTERS.map((item) => (
+          {(['ALL', ...ALERT_STATUSES] as const).map((status) => (
             <button
-              className={`filter-pill${filter === item.value ? ' is-active' : ''}`}
+              key={status}
               type="button"
-              key={item.value}
-              aria-pressed={filter === item.value}
-              onClick={() => setFilter(item.value)}
+              className={`filter-pill${filter === status ? ' is-active' : ''}`}
+              aria-pressed={filter === status}
+              disabled={busy}
+              onClick={() => {
+                setFilter(status)
+                setReason('')
+              }}
             >
-              {item.label} <span>{filterCount(item.value)}</span>
+              {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}{' '}
+              <span>
+                {feed.data
+                  ? alerts.filter((alert) => status === 'ALL' || alert.status === status).length
+                  : '–'}
+              </span>
             </button>
           ))}
         </div>
@@ -167,154 +165,173 @@ export function AlertsDashboardPage() {
       <div className="alert-workspace-grid">
         <section className="prototype-panel alert-list-panel" aria-label="Alerts">
           <header className="prototype-panel__header">
-            <div>
-              <span>Review queue</span>
-              <h2>
-                Alerts <small>{filteredAlerts.length}</small>
-              </h2>
-            </div>
+            <h2>Review queue</h2>
           </header>
-
-          {filteredAlerts.length === 0 ? (
-            <div className="prototype-empty-state alert-list-empty">
-              <span aria-hidden="true">⌕</span>
+          {!feed.data ? (
+            <div className="prototype-empty-state">
+              {feed.error ? 'The alert list is unavailable.' : 'Loading alerts…'}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="prototype-empty-state">
               <h3>No alerts found</h3>
-              <p>Try a different status or search term.</p>
-              <button className="button button--secondary" type="button" onClick={resetFilters}>
-                Clear filters
-              </button>
+              <p>Create a draft or change your filters.</p>
             </div>
           ) : (
             <div className="alert-review-list">
-              {filteredAlerts.map((alert) => (
+              {filtered.map((alert) => (
                 <button
-                  className={`alert-review-item${
-                    selectedAlert?.id === alert.id ? ' is-selected' : ''
-                  }`}
-                  type="button"
                   key={alert.id}
-                  aria-pressed={selectedAlert?.id === alert.id}
-                  onClick={() => selectAlert(alert.id)}
+                  type="button"
+                  disabled={busy}
+                  className={`alert-review-item${selected?.id === alert.id ? ' is-selected' : ''}`}
+                  aria-pressed={selected?.id === alert.id}
+                  onClick={() => {
+                    setSelectedId(alert.id)
+                    setReason('')
+                    setError(null)
+                  }}
                 >
                   <span className="alert-review-item__heading">
                     <span>
-                      <strong>{alert.locationName}</strong>
-                      <small>{alert.id}</small>
+                      <strong>{alert.location.name}</strong>
+                      <small>#{alert.id}</small>
                     </span>
                     <RiskPill risk={alert.severity} compact />
                   </span>
                   <span className="alert-review-item__message">{alert.message}</span>
                   <span className="alert-review-item__footer">
                     <StatusPill status={alert.status} />
-                    <time dateTime={alert.createdAt}>
-                      {formatRelativeTime(alert.createdAt)}
-                    </time>
+                    <time dateTime={alert.created_at}>{formatRelativeTime(alert.created_at)}</time>
                   </span>
                 </button>
               ))}
             </div>
           )}
         </section>
-
         <aside
           className="prototype-panel alert-detail-panel"
           aria-label="Selected alert details"
-          aria-busy={actionStatus !== null}
+          aria-busy={busy}
         >
-          {selectedAlert ? (
+          {selected ? (
             <>
               <header className="alert-detail-panel__header">
                 <div>
-                  <span>Alert detail</span>
-                  <h2>{selectedAlert.locationName}</h2>
-                  <small>{selectedAlert.id}</small>
+                  <h2>{selected.location.name}</h2>
+                  <small>Alert #{selected.id}</small>
                 </div>
-                <StatusPill status={selectedAlert.status} />
+                <StatusPill status={selected.status} />
               </header>
-
               <div className="alert-detail-panel__body">
-                <div className="alert-detail-pills">
-                  <RiskPill risk={selectedAlert.severity} />
-                  <DataPill value={alertSourceValue(selectedAlert)} />
-                </div>
-
+                <RiskPill risk={selected.severity} />
                 <section className="alert-message-card">
                   <span>Alert message</span>
-                  <p>{selectedAlert.message}</p>
+                  <p>{selected.message}</p>
                 </section>
-
                 <dl className="alert-detail-grid">
-                  <div>
-                    <dt>Location</dt>
-                    <dd>{selectedAlert.locationName}</dd>
-                  </div>
-                  <div>
-                    <dt>Severity</dt>
-                    <dd>{selectedAlert.severity.replace('_', ' ')}</dd>
-                  </div>
-                  <div>
-                    <dt>Created</dt>
-                    <dd>
-                      <time dateTime={selectedAlert.createdAt}>
-                        {formatDateTime(selectedAlert.createdAt)}
-                      </time>
-                    </dd>
-                  </div>
                   <div>
                     <dt>Source</dt>
                     <dd>
-                      {selectedAlert.source === 'AI_RECOMMENDATION'
+                      {selected.source === 'AI_RECOMMENDATION'
                         ? 'AI recommendation'
                         : 'MET official'}
                     </dd>
                   </div>
+                  {(
+                    [
+                      ['Created', selected.created_at],
+                      ['Updated', selected.updated_at],
+                      ['Approved', selected.approved_at],
+                      ['Rejected', selected.rejected_at],
+                      ['Suppressed', selected.suppressed_at],
+                    ] as const
+                  ).map(
+                    ([label, date]) =>
+                      date && (
+                        <div key={label}>
+                          <dt>{label}</dt>
+                          <dd>
+                            <time dateTime={date}>{formatDateTime(date)}</time>
+                          </dd>
+                        </div>
+                      ),
+                  )}
                 </dl>
+                {!selected.location.is_active && (
+                  <Alert>This location is inactive. Its alerts cannot be approved.</Alert>
+                )}
+                {selected.suppression_reason && (
+                  <p>
+                    <strong>Suppression reason:</strong> {selected.suppression_reason}
+                  </p>
+                )}
               </div>
-
               <footer className="alert-detail-actions">
-                <p>Choose an operational review action for this demo alert.</p>
                 <div>
                   <button
-                    className="button button--approve"
-                    type="button"
-                    disabled={selectedAlert.status !== 'PENDING' || actionStatus !== null}
-                    onClick={() => changeAlertStatus('APPROVED')}
+                    className="button button--secondary"
+                    disabled={busy || selected.status !== 'PENDING'}
+                    onClick={() => {
+                      setEditor(selected)
+                      setError(null)
+                      setSuccess(null)
+                    }}
                   >
-                    {actionStatus === 'APPROVED'
-                      ? ACTION_COPY.APPROVED.progress
-                      : ACTION_COPY.APPROVED.present}
+                    Edit alert
+                  </button>
+                  <button
+                    className="button button--approve"
+                    disabled={
+                      busy ||
+                      Boolean(editor) ||
+                      selected.status !== 'PENDING' ||
+                      !selected.location.is_active
+                    }
+                    onClick={() => review('approve')}
+                  >
+                    Approve
                   </button>
                   <button
                     className="button button--danger-quiet"
-                    type="button"
-                    disabled={selectedAlert.status !== 'PENDING' || actionStatus !== null}
-                    onClick={() => changeAlertStatus('REJECTED')}
+                    disabled={busy || Boolean(editor) || selected.status !== 'PENDING'}
+                    onClick={() => review('reject')}
                   >
-                    {actionStatus === 'REJECTED'
-                      ? ACTION_COPY.REJECTED.progress
-                      : ACTION_COPY.REJECTED.present}
-                  </button>
-                  <button
-                    className="button button--secondary"
-                    type="button"
-                    disabled={
-                      selectedAlert.status === 'REJECTED' ||
-                      selectedAlert.status === 'SUPPRESSED' ||
-                      actionStatus !== null
-                    }
-                    onClick={() => changeAlertStatus('SUPPRESSED')}
-                  >
-                    {actionStatus === 'SUPPRESSED'
-                      ? ACTION_COPY.SUPPRESSED.progress
-                      : ACTION_COPY.SUPPRESSED.present}
+                    Reject
                   </button>
                 </div>
+                {(selected.status === 'PENDING' || selected.status === 'APPROVED') && (
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      review('suppress')
+                    }}
+                  >
+                    <label className="form-field">
+                      <span>Suppression reason</span>
+                      <textarea
+                        required
+                        maxLength={1000}
+                        value={reason}
+                        disabled={busy || Boolean(editor)}
+                        onChange={(event) => setReason(event.target.value)}
+                        rows={2}
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      className="button button--secondary"
+                      disabled={busy || Boolean(editor) || !reason.trim()}
+                    >
+                      Suppress
+                    </button>
+                  </form>
+                )}
               </footer>
             </>
           ) : (
-            <div className="prototype-empty-state alert-detail-empty">
+            <div className="prototype-empty-state">
               <h3>Select an alert</h3>
-              <p>Choose an item from the review queue to inspect its details.</p>
+              <p>Choose an alert to inspect its details.</p>
             </div>
           )}
         </aside>

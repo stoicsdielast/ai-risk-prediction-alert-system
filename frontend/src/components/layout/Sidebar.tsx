@@ -55,10 +55,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <span>Weather map</span>
           </NavLink>
 
+          <NavLink to="/alerts" onClick={onClose}>
+            <SidebarIcon name="alerts" />
+            <span>Community alerts</span>
+          </NavLink>
+
           {isAdmin && (
             <NavLink to="/admin/alerts" onClick={onClose}>
               <SidebarIcon name="alerts" />
-              <span>Alerts</span>
+              <span>Manage alerts</span>
             </NavLink>
           )}
 

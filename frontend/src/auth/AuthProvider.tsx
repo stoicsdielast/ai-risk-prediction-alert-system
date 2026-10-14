@@ -20,11 +20,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [sessionCheck, setSessionCheck] = useState(0)
 
-  const logout = useCallback(() => {
+  const logout = useCallback((reason?: string) => {
     sessionStorage.removeItem(TOKEN_STORAGE_KEY)
     setToken(null)
     setUser(null)
-    setSessionError(null)
+    setSessionError(reason ?? null)
     setIsLoading(false)
   }, [])
 

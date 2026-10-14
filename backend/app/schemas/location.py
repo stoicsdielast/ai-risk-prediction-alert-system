@@ -26,6 +26,7 @@ class PredictionResponse(BaseModel):
 class LocationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: int
     slug: str
     name: str
     division: Division
@@ -46,6 +47,7 @@ class LocationResponse(BaseModel):
         prediction: Prediction | None,
     ) -> "LocationResponse":
         return cls(
+            id=location.id,
             slug=location.slug,
             name=location.name,
             division=location.division,

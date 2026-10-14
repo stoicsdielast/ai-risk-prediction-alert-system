@@ -1,4 +1,7 @@
 import { Link } from 'react-router-dom'
+import { useAdminAlerts, usePublicAlerts } from '../alerts/useAlertFeed'
+import { Alert } from '../components/Alert'
+import { AlertFeedStatus } from '../components/alerts/AlertFeedStatus'
 import { SummaryCard } from '../components/dashboard/SummaryCard'
 import { PageHeader } from '../components/layout/PageHeader'
 import { DataPill, RiskPill, StatusPill } from '../components/pills/DataPill'
@@ -68,9 +71,12 @@ function MetricIcon({ name }: { name: 'locations' | 'active' | 'pending' | 'risk
 }
 
 export function AdminDashboardPage() {
-  const { alerts, locations, predictions } = usePrototypeData()
+  const { locations, predictions } = usePrototypeData()
+  const feed = useAdminAlerts()
+  const publicFeed = usePublicAlerts()
+  const alerts = feed.data ?? []
 
-  const activeAlerts = alerts.filter((alert) => alert.status === 'APPROVED')
+  const activeAlerts = publicFeed.data ?? []
   const pendingAlerts = alerts.filter((alert) => alert.status === 'PENDING')
   const highRiskLocations = locations.filter(
     (location) =>
@@ -82,7 +88,7 @@ export function AdminDashboardPage() {
   const recentAlerts = [...alerts]
     .sort(
       (first, second) =>
-        new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime(),
+        new Date(second.created_at).getTime() - new Date(first.created_at).getTime(),
     )
     .slice(0, 4)
   const recentPredictions = [...predictions]
@@ -98,8 +104,16 @@ export function AdminDashboardPage() {
       <PageHeader
         eyebrow="MET operations"
         title="Flood risk overview"
-        description="Monitor prototype risk signals, predictions and alerts across Fiji from one operational view."
+        description="Review live alert activity alongside prototype risk signals and predictions."
       />
+
+      <AlertFeedStatus
+        {...feed}
+        refresh={() => { feed.refresh(); publicFeed.refresh() }}
+      />
+      {publicFeed.error && (
+        <Alert tone="error">Active alert count is unavailable. {publicFeed.error}</Alert>
+      )}
 
       <section className="metric-grid" aria-label="Operational summary">
         <SummaryCard
@@ -113,14 +127,14 @@ export function AdminDashboardPage() {
         />
         <SummaryCard
           label="Active alerts"
-          value={activeAlerts.length}
+          value={publicFeed.data && !publicFeed.error ? activeAlerts.length : '–'}
           detail="Approved for public use"
           icon={<MetricIcon name="active" />}
           tone="teal"
         />
         <SummaryCard
           label="Pending alerts"
-          value={pendingAlerts.length}
+          value={feed.data && !feed.error ? pendingAlerts.length : '–'}
           detail="Awaiting MET review"
           icon={<MetricIcon name="pending" />}
           tone="amber"
@@ -146,7 +160,11 @@ export function AdminDashboardPage() {
             </Link>
           </header>
 
-          {recentAlerts.length === 0 ? (
+          {!feed.data ? (
+            <div className="prototype-empty-state">
+              {feed.error ? 'Alert activity is unavailable.' : 'Loading alert activity…'}
+            </div>
+          ) : recentAlerts.length === 0 ? (
             <div className="prototype-empty-state">
               <h3>No alerts found</h3>
               <p>New alerts will appear here when data becomes available.</p>
@@ -157,12 +175,12 @@ export function AdminDashboardPage() {
                 <article className="activity-item" key={alert.id}>
                   <div className="activity-item__content">
                     <div className="activity-item__heading">
-                      <strong>{alert.locationName}</strong>
+                      <strong>{alert.location.name}</strong>
                       <RiskPill risk={alert.severity} compact />
                     </div>
                     <p>{alert.message}</p>
                     <small>
-                      {alert.id} · {formatRelativeTime(alert.createdAt)}
+                      #{alert.id} · {formatRelativeTime(alert.created_at)}
                     </small>
                   </div>
                   <StatusPill status={alert.status} />

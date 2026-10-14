@@ -8,6 +8,7 @@ import { WorkspaceLayout } from './components/layout/WorkspaceLayout'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
 import { AlertsDashboardPage } from './pages/AlertsDashboardPage'
+import { CommunityAlertsPage } from './pages/CommunityAlertsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -34,6 +35,7 @@ function App() {
 
       <Route element={<WorkspaceLayout />}>
         <Route path="weather-map" element={<WeatherMapPage />} />
+        <Route path="alerts" element={<CommunityAlertsPage />} />
 
         <Route element={<RequireAuth />}>
           <Route path="dashboard" element={<DashboardPage />} />

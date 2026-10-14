@@ -14,6 +14,7 @@ export interface ApiPrediction {
 
 /** A location as returned by `GET /api/locations`. */
 export interface ApiLocation {
+  id: number
   slug: string
   name: string
   division: DivisionCode

@@ -3,6 +3,7 @@ import type { ApiLocation } from '../types/location'
 import { toMapLocation } from './useMapLocations'
 
 const navua: ApiLocation = {
+  id: 1,
   slug: 'navua',
   name: 'Navua',
   division: 'CENTRAL',

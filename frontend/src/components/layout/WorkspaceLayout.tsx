@@ -16,6 +16,8 @@ export function WorkspaceLayout() {
     <span className="live-api-badge">
       <span aria-hidden="true" /> Live auth API
     </span>
+  ) : location.pathname === '/alerts' || location.pathname === '/admin/alerts' ? (
+    <span className="live-api-badge"><span aria-hidden="true" /> Live alerts</span>
   ) : (
     <PrototypeBadge />
   )
@@ -36,7 +38,7 @@ export function WorkspaceLayout() {
           {dataBadge}
         </header>
         <div className="workspace-utility-bar">
-          <span>{user ? `Signed in as ${user.name}` : 'Public weather view'}</span>
+          <span>{user ? `Signed in as ${user.name}` : 'Public community information'}</span>
           {dataBadge}
         </div>
         <main className="workspace-main">

@@ -1680,3 +1680,74 @@
     flex: 1;
   }
 }
+
+/* Persisted alerts and community feed. */
+.alert-feed-status__controls,
+.alert-form-actions,
+.community-alert-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.alert-feed-status__controls p {
+  color: var(--text-muted, #64748b);
+  font-size: 0.85rem;
+}
+
+.alert-editor,
+.community-alert-card {
+  padding: clamp(1rem, 3vw, 1.75rem);
+}
+
+.alert-editor fieldset {
+  border: 0;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.alert-editor select,
+.alert-editor textarea,
+.alert-detail-actions textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.65rem;
+  padding: 0.75rem;
+  background: white;
+  color: #172b4d;
+  font: inherit;
+}
+
+.alert-editor textarea,
+.alert-detail-actions textarea {
+  resize: vertical;
+}
+
+.alert-editor :is(select, textarea):focus-visible,
+.alert-detail-actions textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.alert-detail-actions form {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.community-alert-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.community-alert-message,
+.alert-message-card p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
