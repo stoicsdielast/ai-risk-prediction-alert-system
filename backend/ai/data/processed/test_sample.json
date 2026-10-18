@@ -1,0 +1,19 @@
+{
+  "source_row_index": 2448,
+  "input_data": {
+    "Latitude": 9.67177988377172,
+    "Longitude": 88.15399279574052,
+    "Rainfall (mm)": 293.09194881765575,
+    "Temperature (°C)": 25.503107027237363,
+    "Humidity (%)": 39.81842699010563,
+    "River Discharge (m³/s)": 4408.709417273239,
+    "Water Level (m)": 3.9016628090418815,
+    "Elevation (m)": 7378.938294018579,
+    "Population Density": 1700.207917909049,
+    "Infrastructure": 0,
+    "Land Cover": "Forest",
+    "Soil Type": "Silt"
+  },
+  "actual_label": 1,
+  "model_version": "flood-occurrence-prototype-v1-ea0924a7a36a-20261005T233946745926Z"
+}

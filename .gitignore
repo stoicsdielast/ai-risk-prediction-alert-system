@@ -9,8 +9,11 @@ frontend/dist/
 !.env.example
 frontend/.env
 backend/.env
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
-# Python
+# Pythontouch README.md
 __pycache__/
 *.py[cod]
 *.pkl
@@ -29,6 +32,8 @@ ai/data/raw/
 ai/data/processed/
 ai/models/*.pkl
 ai/models/*.joblib
+backend/ai/models/*.joblib
+backend/ai/data/processed/*.csv
 
 # Cache
 .pytest_cache/
