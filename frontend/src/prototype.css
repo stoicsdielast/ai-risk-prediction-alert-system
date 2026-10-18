@@ -1855,3 +1855,78 @@
   grid-column: 2;
   grid-row: 1 / span 2;
 }
+
+/* Community dashboard alerts */
+
+.community-alert-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.community-alert {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e1e4ec;
+  border-left: 4px solid #c9cde0;
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
+.community-alert.is-priority {
+  border-left-color: #d4a72c;
+  background: #fffcf3;
+}
+
+.community-alert__heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.community-alert__heading strong {
+  color: #292d49;
+  font-size: 0.82rem;
+}
+
+.community-alert__heading > span:not(.data-pill) {
+  color: #858c9b;
+  font-size: 0.6rem;
+  font-weight: 750;
+}
+
+.community-alert__heading > .community-alert__priority {
+  margin-left: auto;
+  color: #7a5a12;
+}
+
+.community-alert__priority > span {
+  color: #b7861c;
+}
+
+.community-alert p {
+  margin: 0;
+  color: #3d4257;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.community-alert small {
+  color: #8b92a1;
+  font-size: 0.6rem;
+}
+
+.community-alert-footnote {
+  margin: 0.75rem 0 0;
+  color: #687184;
+  font-size: 0.64rem;
+}
+
+.community-alert-footnote a {
+  color: #494e86;
+  font-weight: 750;
+}

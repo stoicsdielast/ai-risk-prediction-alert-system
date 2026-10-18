@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom'
-import { usePriorityLocations } from '../../locations/usePriorityLocations'
+import type { PriorityLocationsState } from '../../locations/usePriorityLocations'
 import { Alert } from '../Alert'
 import { DataPill, RiskPill } from '../pills/DataPill'
 
+interface PriorityAreasPanelProps {
+  priority: PriorityLocationsState
+}
+
 /** The signed-in user's saved priority areas with their latest risk. */
-export function PriorityAreasPanel() {
-  const { status, error, actionError, locations, pendingSlugs, toggle, retry } =
-    usePriorityLocations()
+export function PriorityAreasPanel({ priority }: PriorityAreasPanelProps) {
+  const { status, error, actionError, locations, pendingSlugs, toggle, retry } = priority
 
   return (
     <section aria-labelledby="priority-areas-title">

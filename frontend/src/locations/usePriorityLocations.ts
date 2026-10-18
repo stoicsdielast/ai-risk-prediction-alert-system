@@ -123,3 +123,5 @@ export function usePriorityLocations() {
     retry,
   }
 }
+
+export type PriorityLocationsState = ReturnType<typeof usePriorityLocations>
