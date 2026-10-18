@@ -10,8 +10,16 @@ const RISK_HEADINGS: Record<RiskLevel, string> = {
   VERY_HIGH: 'Very high flood risk',
 }
 
+/** Save controls for a signed-in user; omitted when nobody is signed in. */
+export interface PriorityControl {
+  isSaved: boolean
+  isPending: boolean
+  onToggle: () => void
+}
+
 interface LocationDetailCardProps {
   location: MapLocation | null
+  priority?: PriorityControl
 }
 
 interface WeatherMetricProps {
@@ -82,7 +90,7 @@ function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
   )
 }
 
-export function LocationDetailCard({ location }: LocationDetailCardProps) {
+export function LocationDetailCard({ location, priority }: LocationDetailCardProps) {
   if (!location) {
     return (
       <aside className="location-detail-card location-detail-card--empty">
@@ -104,6 +112,21 @@ export function LocationDetailCard({ location }: LocationDetailCardProps) {
         </div>
         <RiskPill risk={location.riskLevel} />
       </header>
+
+      {priority && (
+        <div className="location-detail-card__actions">
+          <button
+            type="button"
+            className={`priority-toggle${priority.isSaved ? ' is-saved' : ''}`}
+            aria-pressed={priority.isSaved}
+            disabled={priority.isPending}
+            onClick={priority.onToggle}
+          >
+            <span aria-hidden="true">{priority.isSaved ? '★' : '☆'}</span>
+            {priority.isSaved ? 'Saved as priority area' : 'Save as priority area'}
+          </button>
+        </div>
+      )}
 
       {conditions && (
         <>

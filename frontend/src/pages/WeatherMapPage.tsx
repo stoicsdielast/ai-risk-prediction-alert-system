@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Alert } from '../components/Alert'
 import { LocationDetailCard } from '../components/map/LocationDetailCard'
 import { WeatherMap } from '../components/map/WeatherMap'
 import { RiskPill } from '../components/pills/DataPill'
 import { PageHeader } from '../components/layout/PageHeader'
 import { useMapLocations } from '../locations/useMapLocations'
+import { usePriorityLocations } from '../locations/usePriorityLocations'
 import type { MapLocation } from '../types/location'
 import type { RiskLevel } from '../types/prototype'
 
@@ -26,12 +28,16 @@ function matchesRiskFilter(location: MapLocation, filter: RiskFilter) {
 
 export function WeatherMapPage() {
   const { status, error, locations, retry } = useMapLocations()
+  const priority = usePriorityLocations()
   const [searchQuery, setSearchQuery] = useState('')
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('ALL')
+  const [priorityOnly, setPriorityOnly] = useState(false)
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
 
   const isReady = status === 'ready'
   const hasNoLocations = isReady && locations.length === 0
+  const canSavePriority = priority.status === 'ready'
+  const showPriorityOnly = canSavePriority && priorityOnly
 
   const filteredLocations = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -42,9 +48,13 @@ export function WeatherMapPage() {
         location.name.toLowerCase().includes(normalizedQuery) ||
         location.division.toLowerCase().includes(normalizedQuery)
 
-      return matchesSearch && matchesRiskFilter(location, riskFilter)
+      return (
+        matchesSearch &&
+        matchesRiskFilter(location, riskFilter) &&
+        (!showPriorityOnly || priority.savedSlugs.has(location.id))
+      )
     })
-  }, [locations, riskFilter, searchQuery])
+  }, [locations, priority.savedSlugs, riskFilter, searchQuery, showPriorityOnly])
 
   useEffect(() => {
     if (filteredLocations.length === 0) {
@@ -67,11 +77,13 @@ export function WeatherMapPage() {
 
   const selectedLocation =
     filteredLocations.find((location) => location.id === selectedLocationId) ?? null
-  const filtersAreActive = searchQuery.trim() !== '' || riskFilter !== 'ALL'
+  const filtersAreActive =
+    searchQuery.trim() !== '' || riskFilter !== 'ALL' || showPriorityOnly
 
   const clearFilters = () => {
     setSearchQuery('')
     setRiskFilter('ALL')
+    setPriorityOnly(false)
   }
 
   return (
@@ -131,6 +143,16 @@ export function WeatherMapPage() {
         </div>
       </section>
 
+      {priority.status === 'error' && (
+        <div className="priority-status" role="alert">
+          <span>{priority.error}</span>
+          <button type="button" className="map-clear-button" onClick={priority.retry}>
+            Try again
+          </button>
+        </div>
+      )}
+      {priority.actionError && <Alert tone="error">{priority.actionError}</Alert>}
+
       <div className="weather-map-layout">
         <section
           className="weather-map-card"
@@ -148,11 +170,24 @@ export function WeatherMapPage() {
                   : 'Fiji map'}
               </h2>
             </div>
-            {isReady && filtersAreActive && (
-              <button type="button" className="map-clear-button" onClick={clearFilters}>
-                Clear filters
-              </button>
-            )}
+            <div className="weather-map-card__actions">
+              {isReady && canSavePriority && (
+                <button
+                  type="button"
+                  className={`priority-filter-button${showPriorityOnly ? ' is-active' : ''}`}
+                  aria-pressed={showPriorityOnly}
+                  onClick={() => setPriorityOnly((current) => !current)}
+                >
+                  <span aria-hidden="true">★</span> My priority areas
+                  <span>{priority.locations.length}</span>
+                </button>
+              )}
+              {isReady && filtersAreActive && (
+                <button type="button" className="map-clear-button" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              )}
+            </div>
           </header>
 
           {status === 'loading' && (
@@ -192,6 +227,14 @@ export function WeatherMapPage() {
             />
           )}
 
+          {isReady && showPriorityOnly && priority.locations.length === 0 && (
+            <div className="weather-map-empty" role="status">
+              <span className="weather-map-empty__mark" aria-hidden="true">☆</span>
+              <h2>No priority areas saved yet</h2>
+              <p>Select a location and choose “Save as priority area” to keep it here.</p>
+            </div>
+          )}
+
           {filteredLocations.length > 0 && (
             <div className="map-location-list" aria-label="Visible monitored locations">
               {filteredLocations.map((location) => (
@@ -208,6 +251,12 @@ export function WeatherMapPage() {
                     <strong>{location.name}</strong>
                     <small>{location.division}</small>
                   </span>
+                  {priority.savedSlugs.has(location.id) && (
+                    <span className="map-location-button__priority" title="Priority area">
+                      <span aria-hidden="true">★</span>
+                      <span className="visually-hidden">Priority area</span>
+                    </span>
+                  )}
                   <RiskPill risk={location.riskLevel} compact />
                 </button>
               ))}
@@ -216,7 +265,18 @@ export function WeatherMapPage() {
         </section>
 
         {isReady ? (
-          <LocationDetailCard location={selectedLocation} />
+          <LocationDetailCard
+            location={selectedLocation}
+            priority={
+              canSavePriority && selectedLocation
+                ? {
+                    isSaved: priority.savedSlugs.has(selectedLocation.id),
+                    isPending: priority.pendingSlugs.has(selectedLocation.id),
+                    onToggle: () => void priority.toggle(selectedLocation.id),
+                  }
+                : undefined
+            }
+          />
         ) : (
           <aside className="location-detail-card location-detail-card--empty">
             <span className="location-detail-card__empty-mark" aria-hidden="true">⌖</span>

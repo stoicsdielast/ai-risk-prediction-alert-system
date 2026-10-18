@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { Alert } from '../components/Alert'
+import { PriorityAreasPanel } from '../components/dashboard/PriorityAreasPanel'
 
 interface DashboardLocationState {
   accessDenied?: string
@@ -62,6 +63,8 @@ export function DashboardPage() {
           Open weather map
         </Link>
       </section>
+
+      <PriorityAreasPanel />
 
       <section>
         <div className="section-heading">

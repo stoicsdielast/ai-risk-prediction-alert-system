@@ -3,12 +3,26 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/client'
 import { getLocations } from '../api/locations'
+import {
+  getPriorityLocations,
+  removePriorityLocation,
+  savePriorityLocation,
+} from '../api/priorityLocations'
+import type { AuthContextValue } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { PrototypeDataProvider } from '../prototype/PrototypeDataProvider'
+import type { User } from '../types/auth'
 import type { ApiLocation, ApiPrediction } from '../types/location'
 import type { MapLocation } from '../types/location'
 import { WeatherMapPage } from './WeatherMapPage'
 
 vi.mock('../api/locations', () => ({ getLocations: vi.fn() }))
+vi.mock('../api/priorityLocations', () => ({
+  getPriorityLocations: vi.fn(),
+  savePriorityLocation: vi.fn(),
+  removePriorityLocation: vi.fn(),
+}))
+vi.mock('../auth/useAuth', () => ({ useAuth: vi.fn() }))
 
 // Leaflet needs real layout, which jsdom does not provide. The page logic is
 // what is under test here, so render markers as a plain list.
@@ -23,6 +37,30 @@ vi.mock('../components/map/WeatherMap', () => ({
 }))
 
 const mockedGetLocations = vi.mocked(getLocations)
+const mockedGetPriorityLocations = vi.mocked(getPriorityLocations)
+const mockedSavePriorityLocation = vi.mocked(savePriorityLocation)
+const mockedRemovePriorityLocation = vi.mocked(removePriorityLocation)
+const mockedUseAuth = vi.mocked(useAuth)
+
+const COMMUNITY_USER: User = {
+  id: 7,
+  name: 'Test Community User',
+  email: 'community@example.com',
+  role: 'COMMUNITY',
+  status: 'APPROVED',
+}
+
+function signIn(user: User | null) {
+  mockedUseAuth.mockReturnValue({
+    user,
+    token: user ? 'test-token' : null,
+    isLoading: false,
+    sessionError: null,
+    login: vi.fn(),
+    logout: vi.fn(),
+    retrySession: vi.fn(),
+  } satisfies AuthContextValue)
+}
 
 function samplePrediction(overrides: Partial<ApiPrediction> = {}): ApiPrediction {
   return {
@@ -85,6 +123,10 @@ function markers() {
 describe('WeatherMapPage', () => {
   beforeEach(() => {
     mockedGetLocations.mockReset()
+    mockedGetPriorityLocations.mockReset()
+    mockedSavePriorityLocation.mockReset()
+    mockedRemovePriorityLocation.mockReset()
+    signIn(null)
   })
 
   it('shows a loading state and disables filters until locations arrive', () => {
@@ -200,5 +242,123 @@ describe('WeatherMapPage', () => {
 
     expect(await screen.findByText('No monitored locations yet')).toBeInTheDocument()
     expect(screen.queryByText('Loading monitored locations…')).not.toBeInTheDocument()
+  })
+
+  describe('priority areas', () => {
+    it('offers no save controls to visitors who are not signed in', async () => {
+      mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+      renderPage()
+      await screen.findByText('3 locations shown')
+
+      expect(
+        screen.queryByRole('button', { name: /priority area/ }),
+      ).not.toBeInTheDocument()
+      expect(mockedGetPriorityLocations).not.toHaveBeenCalled()
+    })
+
+    it('lets a signed-in user save the selected location', async () => {
+      const user = userEvent.setup()
+      signIn(COMMUNITY_USER)
+      mockedGetLocations.mockResolvedValue(LOCATIONS)
+      mockedGetPriorityLocations.mockResolvedValue([])
+      mockedSavePriorityLocation.mockResolvedValue(LOCATIONS[0])
+
+      renderPage()
+      await screen.findByText('3 locations shown')
+      const details = screen.getByRole('complementary')
+      await user.click(
+        await within(details).findByRole('button', { name: 'Save as priority area' }),
+      )
+
+      expect(mockedSavePriorityLocation).toHaveBeenCalledWith('test-token', 'nadi')
+      expect(
+        await within(details).findByRole('button', { name: 'Saved as priority area' }),
+      ).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('button', { name: /My priority areas/ })).toHaveTextContent('1')
+    })
+
+    it('marks saved locations and filters to them', async () => {
+      const user = userEvent.setup()
+      signIn(COMMUNITY_USER)
+      mockedGetLocations.mockResolvedValue(LOCATIONS)
+      mockedGetPriorityLocations.mockResolvedValue([LOCATIONS[2]])
+
+      renderPage()
+      await screen.findByText('3 locations shown')
+
+      expect(
+        await screen.findByRole('button', { name: /Labasa.*Priority area/ }),
+      ).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: /My priority areas/ }))
+      expect(markers()).toEqual(['Labasa'])
+
+      await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+      expect(markers()).toHaveLength(3)
+    })
+
+    it('removes a saved location', async () => {
+      const user = userEvent.setup()
+      signIn(COMMUNITY_USER)
+      mockedGetLocations.mockResolvedValue(LOCATIONS)
+      mockedGetPriorityLocations.mockResolvedValue([LOCATIONS[0]])
+      mockedRemovePriorityLocation.mockResolvedValue(undefined)
+
+      renderPage()
+      await screen.findByText('3 locations shown')
+      const details = screen.getByRole('complementary')
+      await user.click(
+        await within(details).findByRole('button', { name: 'Saved as priority area' }),
+      )
+
+      expect(mockedRemovePriorityLocation).toHaveBeenCalledWith('test-token', 'nadi')
+      expect(
+        await within(details).findByRole('button', { name: 'Save as priority area' }),
+      ).toHaveAttribute('aria-pressed', 'false')
+    })
+
+    it('shows an error when saving fails and keeps the location unsaved', async () => {
+      const user = userEvent.setup()
+      signIn(COMMUNITY_USER)
+      mockedGetLocations.mockResolvedValue(LOCATIONS)
+      mockedGetPriorityLocations.mockResolvedValue([])
+      mockedSavePriorityLocation.mockRejectedValue(new ApiError(500, 'Unable to update priority locations'))
+
+      renderPage()
+      await screen.findByText('3 locations shown')
+      const details = screen.getByRole('complementary')
+      await user.click(
+        await within(details).findByRole('button', { name: 'Save as priority area' }),
+      )
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Unable to update priority locations',
+      )
+      expect(
+        within(details).getByRole('button', { name: 'Save as priority area' }),
+      ).toBeEnabled()
+    })
+
+    it('keeps the map usable when priority areas cannot be loaded', async () => {
+      const user = userEvent.setup()
+      signIn(COMMUNITY_USER)
+      mockedGetLocations.mockResolvedValue(LOCATIONS)
+      mockedGetPriorityLocations
+        .mockRejectedValueOnce(new Error('boom'))
+        .mockResolvedValueOnce([])
+
+      renderPage()
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Unable to load your priority areas. Please try again.',
+      )
+      expect(markers()).toHaveLength(3)
+
+      await user.click(screen.getByRole('button', { name: 'Try again' }))
+      expect(
+        await screen.findByRole('button', { name: 'Save as priority area' }),
+      ).toBeInTheDocument()
+    })
   })
 })

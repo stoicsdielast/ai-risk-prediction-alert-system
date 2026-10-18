@@ -19,6 +19,8 @@ See the [frontend prototype guide](../docs/PROTOTYPE_UI.md) for that boundary.
 - `PATCH /api/admin/users/{user_id}/approve`
 - `PATCH /api/admin/users/{user_id}/reject`
 - `GET /api/locations`, `GET /api/locations/divisions`, `GET /api/locations/{slug}`
+- `GET /api/me/priority-locations`, `PUT /api/me/priority-locations/{slug}`,
+  `DELETE /api/me/priority-locations/{slug}`
 - PostgreSQL user storage through SQLAlchemy
 - Dependency-injected database sessions
 - Email-format validation and lowercase normalization
@@ -204,6 +206,23 @@ Example location:
   "longitude": 178.4419
 }
 ```
+
+## Priority locations API
+
+Signed-in users with an approved, active account can save locations as
+priority areas. Each user sees only their own list. All three endpoints need a
+bearer token and return `401` without one and `403` for pending, rejected or
+inactive accounts.
+
+| Endpoint | Description |
+| --- | --- |
+| `GET /api/me/priority-locations` | The user's saved locations, ordered by name, in the same shape as `GET /api/locations` (including the latest prediction). Locations that are no longer active are left out |
+| `PUT /api/me/priority-locations/{slug}` | Save an active location. Saving it again changes nothing. Returns the location, or `404 Location not found` |
+| `DELETE /api/me/priority-locations/{slug}` | Remove a saved location (`204`). Removing one that was not saved changes nothing. Inactive locations can still be removed |
+
+Saved locations are stored in the `priority_locations` table and are deleted
+when their user or location is deleted. On an existing database, run
+`python -m app.db.init_db` again to create the new table.
 
 ## Run the backend
 
