@@ -725,11 +725,11 @@ This milestone intentionally does not provide:
 - Refresh tokens or token revocation storage
 - Password reset or email verification
 - Account approval audit fields such as `approved_by` or `approved_at`
-- Prediction ingestion, weather, mapping, reporting, or notification delivery
+- Operational prediction ingestion or external notification delivery. Weather
+  observation storage and APIs are now available; see the weather section below.
 
 The React authentication interface uses this backend as its security boundary.
-If future changes add audit columns or other schema fields, introduce Alembic
-before modifying deployed databases.
+Use the existing Alembic migration workflow before modifying deployed schemas.
 
 # Bangladesh historical research API
 
@@ -759,3 +759,11 @@ The isolated synthetic replay and alert-approval demonstration is documented in
 - Every response carries `source_type: "synthetic"` and a research-demonstration
   notice. These are simulator outputs, never official Fiji MET readings or
   emergency warnings.
+
+# Weather observation backend
+
+The weather storage/API and optional standalone ingestion worker are documented in
+[`docs/WEATHER_DATA_MANAGEMENT.md`](../docs/WEATHER_DATA_MANAGEMENT.md).
+Run `.venv/bin/python -m alembic upgrade head` on an existing initialized database
+before using these endpoints. Genuine and synthetic weather are physically separated;
+no external weather provider is configured by default.

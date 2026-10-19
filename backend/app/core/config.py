@@ -10,6 +10,15 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    weather_freshness_minutes: int = Field(default=180, ge=1, le=10080)
+    weather_ingestion_enabled: bool = False
+    weather_feed_url: str | None = None
+    weather_feed_source: str = "configured-feed"
+    weather_feed_synthetic: bool = True
+    weather_feed_token: SecretStr | None = None
+    weather_poll_seconds: int = Field(default=900, ge=10)
+    weather_retry_attempts: int = Field(default=3, ge=1, le=10)
+    weather_timeout_seconds: int = Field(default=20, ge=1, le=120)
     synthetic_model_dir: Path = Field(default=BACKEND_DIR.parent / "ml/artifacts/synthetic/v1", validation_alias="SYNTHETIC_MODEL_DIR")
     synthetic_research_dir: Path = Field(
         default=BACKEND_DIR.parent / "ml/artifacts/synthetic/v3", validation_alias="SYNTHETIC_RESEARCH_DIR",
