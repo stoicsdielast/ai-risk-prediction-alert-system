@@ -72,9 +72,9 @@ export function SyntheticReplay() {
   }
 
   const maps: MapLocation[] = useMemo(() => frame?.locations.map(location => ({
-    id: location.slug, name: location.name, division: `${location.division} Division`,
+    id: location.slug, apiId: location.location_id, name: location.name, division: `${location.division} Division`,
     latitude: location.latitude, longitude: location.longitude, riskLevel: location.risk_category,
-    conditions: null, prediction: location.risk_category && location.probability != null ? {
+    prediction: location.risk_category && location.probability != null ? {
       riskLevel: location.risk_category, floodProbabilityPercent: Math.round(location.probability * 100),
       isSample: true, predictedAt: location.timestamp,
     } : null,

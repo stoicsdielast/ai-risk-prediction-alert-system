@@ -202,5 +202,8 @@ Still blocking genuine Fiji forecasts: validated real static geography and gauge
 reference data; compatible upstream/weather coverage and accumulation conventions;
 verified real-provider ingestion; current-event assessment; and independent Fiji model
 validation/approval. V1's assumed geography must never be substituted for those inputs.
-Next integration task: Functionality 1 dashboard data integration, with explicit
-research/demo labelling; mapping integration can then consume the same typed feeds.
+Next integration task completed: Functionality 1 dashboard/map data integration —
+the map detail card now fetches stored synthetic weather via
+`GET /api/weather/latest`, dashboards derive metrics/predictions from
+`GET /api/locations`, and fabricated prototype/official-warning data was removed
+(see `docs/PROTOTYPE_UI.md`).

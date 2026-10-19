@@ -15,22 +15,20 @@ const navua: ApiLocation = {
 
 describe('toMapLocation', () => {
   it('maps a location with a sample prediction', () => {
-    const location = toMapLocation(
-      {
-        ...navua,
-        prediction: {
-          risk_level: 'HIGH',
-          flood_probability: 0.736,
-          model_version: 'sample-demo-not-a-model-result',
-          is_sample: true,
-          predicted_at: '2026-10-13T00:00:00Z',
-        },
+    const location = toMapLocation({
+      ...navua,
+      prediction: {
+        risk_level: 'HIGH',
+        flood_probability: 0.736,
+        model_version: 'sample-demo-not-a-model-result',
+        is_sample: true,
+        predicted_at: '2026-10-13T00:00:00Z',
       },
-      null,
-    )
+    })
 
     expect(location).toMatchObject({
       id: 'navua',
+      apiId: 1,
       division: 'Central Division',
       riskLevel: 'HIGH',
       prediction: {
@@ -43,7 +41,7 @@ describe('toMapLocation', () => {
   })
 
   it('leaves risk empty when no prediction is available', () => {
-    const location = toMapLocation(navua, null)
+    const location = toMapLocation(navua)
 
     expect(location.riskLevel).toBeNull()
     expect(location.prediction).toBeNull()

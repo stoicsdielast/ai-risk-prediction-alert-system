@@ -5,7 +5,8 @@ import { AlertFeedStatus } from '../components/alerts/AlertFeedStatus'
 import { SummaryCard } from '../components/dashboard/SummaryCard'
 import { PageHeader } from '../components/layout/PageHeader'
 import { DataPill, RiskPill, StatusPill } from '../components/pills/DataPill'
-import { usePrototypeData } from '../prototype/usePrototypeData'
+import { useLocations } from '../locations/useLocations'
+import type { ApiLocation } from '../types/location'
 import { formatRelativeTime } from '../utils/date'
 import { SyntheticReplayPanel } from '../components/research/SyntheticReplayPanel'
 
@@ -72,16 +73,19 @@ function MetricIcon({ name }: { name: 'locations' | 'active' | 'pending' | 'risk
 }
 
 export function AdminDashboardPage() {
-  const { locations, predictions } = usePrototypeData()
+  const { status: locationsStatus, locations, error: locationsError } = useLocations()
   const feed = useAdminAlerts()
   const publicFeed = usePublicAlerts()
   const alerts = feed.data ?? []
+  const locationsReady = locationsStatus === 'ready'
 
   const activeAlerts = publicFeed.data ?? []
   const pendingAlerts = alerts.filter((alert) => alert.status === 'PENDING')
   const highRiskLocations = locations.filter(
     (location) =>
-      location.riskLevel === 'HIGH' || location.riskLevel === 'VERY_HIGH',
+      location.prediction &&
+      (location.prediction.risk_level === 'HIGH' ||
+        location.prediction.risk_level === 'VERY_HIGH'),
   )
   const monitoredDivisions = new Set(
     locations.map((location) => location.division),
@@ -92,11 +96,13 @@ export function AdminDashboardPage() {
         new Date(second.created_at).getTime() - new Date(first.created_at).getTime(),
     )
     .slice(0, 4)
-  const recentPredictions = [...predictions]
+  const recentPredictions = [...locations]
+    .filter((location): location is ApiLocation & { prediction: NonNullable<ApiLocation['prediction']> } =>
+      location.prediction !== null)
     .sort(
       (first, second) =>
-        new Date(second.generatedAt).getTime() -
-        new Date(first.generatedAt).getTime(),
+        new Date(second.prediction.predicted_at).getTime() -
+        new Date(first.prediction.predicted_at).getTime(),
     )
     .slice(0, 4)
 
@@ -105,7 +111,7 @@ export function AdminDashboardPage() {
       <PageHeader
         eyebrow="MET operations"
         title="Flood risk overview"
-        description="Review live alert activity alongside prototype risk signals and predictions."
+        description="Review live alert activity, stored observations and latest predictions from the backend."
       />
 
       <AlertFeedStatus
@@ -115,16 +121,25 @@ export function AdminDashboardPage() {
       {publicFeed.error && (
         <Alert tone="error">Active alert count is unavailable. {publicFeed.error}</Alert>
       )}
+      {locationsError && (
+        <Alert tone="error">
+          Monitored-location metrics are unavailable. {locationsError}
+        </Alert>
+      )}
 
       <SyntheticReplayPanel />
 
       <section className="metric-grid" aria-label="Operational summary">
         <SummaryCard
           label="Monitored locations"
-          value={locations.length}
-          detail={`Across ${monitoredDivisions} ${
-            monitoredDivisions === 1 ? 'division' : 'divisions'
-          }`}
+          value={locationsReady ? locations.length : '–'}
+          detail={
+            locationsReady
+              ? `Across ${monitoredDivisions} ${
+                  monitoredDivisions === 1 ? 'division' : 'divisions'
+                }`
+              : 'Loading location registry…'
+          }
           icon={<MetricIcon name="locations" />}
           tone="indigo"
         />
@@ -144,8 +159,8 @@ export function AdminDashboardPage() {
         />
         <SummaryCard
           label="High-risk areas"
-          value={highRiskLocations.length}
-          detail="High or very high risk"
+          value={locationsReady ? highRiskLocations.length : '–'}
+          detail="High or very high latest risk"
           icon={<MetricIcon name="risk" />}
           tone="red"
         />
@@ -196,7 +211,7 @@ export function AdminDashboardPage() {
         <article className="prototype-panel recent-predictions-panel">
           <header className="prototype-panel__header">
             <div>
-              <span>AI model output</span>
+              <span>Latest model output</span>
               <h2>Recent predictions</h2>
             </div>
             <Link className="panel-link" to="/weather-map">
@@ -204,30 +219,36 @@ export function AdminDashboardPage() {
             </Link>
           </header>
 
-          {recentPredictions.length === 0 ? (
+          {!locationsReady ? (
+            <div className="prototype-empty-state">
+              {locationsError
+                ? 'Predictions are unavailable because the location registry could not be loaded.'
+                : 'Loading predictions…'}
+            </div>
+          ) : recentPredictions.length === 0 ? (
             <div className="prototype-empty-state">
               <h3>No predictions found</h3>
               <p>Prediction updates will appear here when data becomes available.</p>
             </div>
           ) : (
             <div className="prediction-list">
-              {recentPredictions.map((prediction) => (
-                <article className="prediction-item" key={prediction.id}>
+              {recentPredictions.map((location) => (
+                <article className="prediction-item" key={location.id}>
                   <div className="prediction-item__heading">
                     <div>
-                      <strong>{prediction.locationName}</strong>
-                      <small>{prediction.horizon}</small>
+                      <strong>{location.name}</strong>
+                      <small>{location.division_label}</small>
                     </div>
-                    <RiskPill risk={prediction.riskLevel} compact />
+                    <RiskPill risk={location.prediction.risk_level} compact />
                   </div>
                   <div className="prediction-item__footer">
                     <DataPill
-                      value="AI_PREDICTION"
-                      label={`${prediction.confidencePercent}% confidence`}
+                      value={location.prediction.is_sample ? 'SAMPLE_RISK' : 'AI_PREDICTION'}
+                      label={`${Math.round(location.prediction.flood_probability * 100)}% probability`}
                       compact
                     />
-                    <time dateTime={prediction.generatedAt}>
-                      {formatRelativeTime(prediction.generatedAt)}
+                    <time dateTime={location.prediction.predicted_at}>
+                      {formatRelativeTime(location.prediction.predicted_at)}
                     </time>
                   </div>
                 </article>

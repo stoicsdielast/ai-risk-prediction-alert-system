@@ -2,14 +2,17 @@ import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { PublicAlertContext } from '../alerts/PublicAlertContext'
 import { ApiError } from '../api/client'
 import { getLocations } from '../api/locations'
-import { PrototypeDataProvider } from '../prototype/PrototypeDataProvider'
+import { getLatestWeather } from '../api/weather'
 import type { ApiLocation, ApiPrediction } from '../types/location'
 import type { MapLocation } from '../types/location'
+import type { ApiLatestWeather } from '../types/weather'
 import { WeatherMapPage } from './WeatherMapPage'
 
 vi.mock('../api/locations', () => ({ getLocations: vi.fn() }))
+vi.mock('../api/weather', () => ({ getLatestWeather: vi.fn() }))
 
 // Leaflet needs real layout, which jsdom does not provide. The page logic is
 // what is under test here, so render markers as a plain list.
@@ -24,6 +27,17 @@ vi.mock('../components/map/WeatherMap', () => ({
 }))
 
 const mockedGetLocations = vi.mocked(getLocations)
+const mockedGetLatestWeather = vi.mocked(getLatestWeather)
+
+function noWeather(locationId: number): ApiLatestWeather {
+  return {
+    location_id: locationId,
+    status: 'no_data',
+    source_type: 'synthetic',
+    notice: null,
+    observation: null,
+  }
+}
 
 function samplePrediction(overrides: Partial<ApiPrediction> = {}): ApiPrediction {
   return {
@@ -75,9 +89,18 @@ const LOCATIONS: ApiLocation[] = [
 function renderPage() {
   return render(
     <MemoryRouter>
-      <PrototypeDataProvider>
+      <PublicAlertContext.Provider
+        value={{
+          data: [],
+          setData: () => {},
+          error: null,
+          refreshing: false,
+          updatedAt: '2026-10-20T00:00:00Z',
+          refresh: () => {},
+        }}
+      >
         <WeatherMapPage />
-      </PrototypeDataProvider>
+      </PublicAlertContext.Provider>
     </MemoryRouter>,
   )
 }
@@ -91,6 +114,10 @@ function markers() {
 describe('WeatherMapPage', () => {
   beforeEach(() => {
     mockedGetLocations.mockReset()
+    mockedGetLatestWeather.mockReset()
+    mockedGetLatestWeather.mockImplementation(async (locationId) =>
+      noWeather(locationId),
+    )
   })
 
   it('shows a loading state and disables filters until locations arrive', () => {
@@ -158,6 +185,17 @@ describe('WeatherMapPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('fetches the stored weather feed for the selected location', async () => {
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    const details = screen.getByRole('complementary')
+    expect(await within(details).findByText('No observation has been stored for this location yet. Stored demo weather appears here once it has been ingested.')).toBeInTheDocument()
+    expect(mockedGetLatestWeather).toHaveBeenCalledWith(1, 'synthetic', expect.any(AbortSignal))
+  })
+
   it('shows "No prediction available" for a location without a prediction', async () => {
     const user = userEvent.setup()
     mockedGetLocations.mockResolvedValue(LOCATIONS)
@@ -169,6 +207,19 @@ describe('WeatherMapPage', () => {
     expect(within(details).getByRole('heading', { name: 'Navua' })).toBeInTheDocument()
     expect(within(details).getByText('No prediction available')).toBeInTheDocument()
     expect(within(details).queryByText('Sample risk')).not.toBeInTheDocument()
+  })
+
+  it('states that no approved alert is active when the public feed is empty', async () => {
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    const details = screen.getByRole('complementary')
+    expect(
+      await within(details).findByText('No approved community alert is active for this location.'),
+    ).toBeInTheDocument()
+    expect(within(details).queryByText('Official public warning')).not.toBeInTheDocument()
   })
 
   it('filters by risk level, including locations with no prediction', async () => {

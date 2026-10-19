@@ -1,5 +1,33 @@
 # Frontend Prototype: Architecture, Setup, and Demo Guide
 
+## Verified implementation update — 20 October 2026
+
+The guide below is retained as a **historical baseline**; several sections still
+describe the earlier prototype-data era. The current verified live-vs-demo
+boundary after the dashboard-integration work is:
+
+| Area | Current source | Persistent? | Status |
+| --- | --- | --- | --- |
+| Registration, login, and current user | FastAPI + PostgreSQL | Yes | Live |
+| Pending-account list and account approval/rejection | FastAPI + PostgreSQL | Yes | Live |
+| Community account overview | Current user returned by FastAPI | Yes | Live auth data |
+| Monitored locations (map list, registry metrics) | `GET /api/locations` | Yes | Live backend |
+| Flood-risk markers and prediction panel | `GET /api/locations` joined predictions | Yes | Live backend; `is_sample` rows labelled as test data |
+| Weather observations on the map detail card | `GET /api/weather/latest?dataset=synthetic` | Yes | Live backend storage; always labelled synthetic demo data with the research notice |
+| MET dashboard metrics and recent predictions | Derived from the live location registry | Yes | Live backend |
+| Community alert feed and MET alert management | `/api/alerts/active`, `/api/admin/alerts*` | Yes | Live backend |
+| Official Fiji MET warnings | Not part of this system | — | Never shown; the map shows approved community alerts only, with a precedence note |
+| `/research` synthetic scenario study | Read-only FastAPI + published research bundles | No (bundles on disk) | Research only |
+| OpenStreetMap basemap | Public internet tile service | External tiles only | Visual context |
+
+Removed in this update: `src/data/prototypeData.ts`, `src/prototype/`
+(`PrototypeDataProvider`, `usePrototypeData`), the fabricated "official warning"
+strings, and all `GET /api/risk/{location}` placeholder behaviour (the backend
+endpoint now returns 410). The remainder of this document describes the
+pre-removal prototype and should be read with that correction in mind.
+
+---
+
 This guide explains how the current FloodWatch Fiji frontend prototype works,
 how to run it, and which parts are connected to the FastAPI/PostgreSQL backend.
 It is intended for development, demonstrations, and university-project review.

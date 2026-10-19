@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { usePublicAlerts } from '../alerts/useAlertFeed'
 import { LocationDetailCard } from '../components/map/LocationDetailCard'
 import { WeatherMap } from '../components/map/WeatherMap'
 import { RiskPill } from '../components/pills/DataPill'
@@ -27,6 +28,7 @@ function matchesRiskFilter(location: MapLocation, filter: RiskFilter) {
 
 export function WeatherMapPage() {
   const { status, error, locations, retry } = useMapLocations()
+  const publicFeed = usePublicAlerts()
   const [searchQuery, setSearchQuery] = useState('')
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('ALL')
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
@@ -70,6 +72,13 @@ export function WeatherMapPage() {
     filteredLocations.find((location) => location.id === selectedLocationId) ?? null
   const filtersAreActive = searchQuery.trim() !== '' || riskFilter !== 'ALL'
 
+  const locationAlerts = useMemo(() => {
+    if (!selectedLocation || !publicFeed.data) return []
+    return publicFeed.data.filter(
+      (alert) => alert.location_id === selectedLocation.apiId,
+    )
+  }, [publicFeed.data, selectedLocation])
+
   const clearFilters = () => {
     setSearchQuery('')
     setRiskFilter('ALL')
@@ -80,7 +89,7 @@ export function WeatherMapPage() {
       <PageHeader
         eyebrow="National monitoring view"
         title="Weather & flood-risk map"
-        description="Explore monitored Fiji locations with labelled sample flood risks and prototype weather observations."
+        description="Explore monitored Fiji locations with backend flood-risk predictions and stored weather observations."
       />
 
       <SyntheticReplayPanel />
@@ -219,7 +228,10 @@ export function WeatherMapPage() {
         </section>
 
         {isReady ? (
-          <LocationDetailCard location={selectedLocation} />
+          <LocationDetailCard
+            location={selectedLocation}
+            activeAlerts={locationAlerts}
+          />
         ) : (
           <aside className="location-detail-card location-detail-card--empty">
             <span className="location-detail-card__empty-mark" aria-hidden="true">⌖</span>
@@ -234,9 +246,9 @@ export function WeatherMapPage() {
       </div>
 
       <p className="weather-map-disclaimer">
-        Sample risks are labelled test data and weather observations are illustrative.
-        Always follow current official Fiji Meteorological Service warnings and
-        emergency instructions.
+        Sample risks are labelled test data and weather observations may be
+        synthetic research data. Always follow current official Fiji
+        Meteorological Service warnings and emergency instructions.
       </p>
     </div>
   )

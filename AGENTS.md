@@ -69,7 +69,7 @@ There is no repo-wide lint/typecheck, no CI workflows, and no pre-commit config.
 
 ## Frontend conventions
 
-- Live backend surface is only auth, admin account review, locations, predictions replay, alerts APIs, and the read-only synthetic research endpoints (`/api/synthetic/research/*`, shown at `/research`). Weather observations, dashboard metrics, map risk markers, and alert demo actions are local prototype data from `src/data/prototypeData.ts` and `src/prototype/`. Label screens accordingly when presenting or extending (see `docs/PROTOTYPE_UI.md`).
+- Live backend surface is auth, admin account review, locations, predictions replay, alerts APIs, the read-only synthetic research endpoints (`/api/synthetic/research/*`, shown at `/research`), and the weather APIs (`GET /api/weather/latest|observations`; the map detail card fetches synthetic-dataset weather per selected location). Dashboard metrics, map markers, and recent predictions derive from live `GET /api/locations`; there is no local prototype dataset anymore (`src/data/prototypeData.ts` and `src/prototype/` were removed). Weather storage may be empty until observations are ingested; UI labels synthetic/sample rows explicitly (see `docs/PROTOTYPE_UI.md`).
 - JWT stored in `sessionStorage`; role comes from `GET /api/auth/me`, never decoded from the token.
 - Tests live next to source (`*.test.ts(x)`), jsdom env, setup in `src/test/setup.ts`.
 

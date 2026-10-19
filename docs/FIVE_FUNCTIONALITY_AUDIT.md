@@ -8,7 +8,7 @@ by this update; the remaining genuine-forecast limitations still apply.
 
 | Functionality | Current verified status |
 |---|---|
-| 1 Dashboard | PARTIAL; frontend data integration still pending |
+| 1 Dashboard | COMPLETE for available backend feeds: admin/user dashboards and the map now derive locations, metrics, recent predictions, stored weather and approved alerts from live APIs; fabricated prototype/official-warning data removed. Remaining scope: no dedicated weather-station network or MET dashboard-summary endpoint exists yet |
 | 2 Weather management | Backend storage, authorized ingestion, latest/history, source separation and configurable worker implemented; actual PostgreSQL verified; external provider not configured |
 | 3 AI prediction | COMPLETE for the bounded V1 research workflow: persisted weather → 56-feature builder → unchanged trained pipeline → persisted synthetic prediction → optional PENDING demo alert. Genuine operational Fiji forecasts remain BLOCKED |
 | 4 Flood mapping | PARTIAL; previous integration gaps remain |
@@ -20,6 +20,12 @@ Evidence: `app/services/v1_features.py`, `v1_model.py`, `prediction_generation.p
 `backend/`). Real PostgreSQL tests verify all 12 locations, concurrency/idempotency,
 durability and prediction/provenance rollback on alert failure. The real configured
 database smoke verified PENDING alerts for Nausori/Sigatoka and no operational writes.
+
+Frontend evidence (F1): `frontend/src/api/weather.ts`,
+`frontend/src/locations/useLocations.ts`, `useLocationWeather.ts`,
+`pages/AdminDashboardPage.tsx`, `components/map/LocationDetailCard.tsx` and their
+tests; `src/data/prototypeData.ts` and `src/prototype/` were deleted.
+Verified: 79 frontend tests passed, oxlint clean, `tsc -b && vite build` passed.
 
 `GET /api/risk/{location}` now returns 410; no hardcoded probability remains.
 `POST /api/predictions/generate` is MET-admin authenticated, explicitly research-only,

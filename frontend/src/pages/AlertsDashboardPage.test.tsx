@@ -4,16 +4,13 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
 import { AuthProvider } from '../auth/AuthProvider'
-import { PrototypeDataProvider } from '../prototype/PrototypeDataProvider'
 import { installAlertApi, sampleAlert } from '../test/alertApiFixture'
 
 function renderApp(path = '/admin/alerts') {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <AuthProvider>
-        <PrototypeDataProvider>
-          <App />
-        </PrototypeDataProvider>
+        <App />
       </AuthProvider>
     </MemoryRouter>,
   )

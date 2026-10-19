@@ -1,4 +1,4 @@
-import type { RiskLevel, WeatherLocation } from './prototype'
+import type { RiskLevel } from './prototype'
 
 export type DivisionCode = 'CENTRAL' | 'WESTERN' | 'NORTHERN' | 'EASTERN'
 
@@ -35,12 +35,12 @@ export interface MapPrediction {
 /** A backend location prepared for the weather map. */
 export interface MapLocation {
   id: string
+  /** Numeric registry id used by weather and alert APIs. */
+  apiId: number
   name: string
   division: string
   latitude: number
   longitude: number
   riskLevel: RiskLevel | null
   prediction: MapPrediction | null
-  /** Prototype weather and official-warning data, when the demo set has any. */
-  conditions: WeatherLocation | null
 }
