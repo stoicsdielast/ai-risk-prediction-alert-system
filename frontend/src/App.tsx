@@ -17,6 +17,7 @@ import { RegistrationSubmittedPage } from './pages/RegistrationSubmittedPage'
 import { WeatherMapPage } from './pages/WeatherMapPage'
 import { WelcomePage } from './pages/WelcomePage'
 import { SyntheticReplay } from './components/research/SyntheticReplayPanel'
+import { SyntheticResearchPage } from './pages/SyntheticResearchPage'
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
       <Route element={<WorkspaceLayout />}>
         <Route path="weather-map" element={<WeatherMapPage />} />
         <Route path="simulation" element={<SyntheticReplay />} />
+        <Route path="research" element={<SyntheticResearchPage />} />
         <Route path="alerts" element={<CommunityAlertsPage />} />
 
         <Route element={<RequireAuth />}>

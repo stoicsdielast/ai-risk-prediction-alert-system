@@ -64,10 +64,12 @@ There is no repo-wide lint/typecheck, no CI workflows, and no pre-commit config.
 - `SYNTHETIC_DEMO_ENABLED=true` gates the isolated synthetic alert demo; default false. Synthetic tables/feeds are separate from operational predictions/alerts.
 - Every synthetic view/response must carry `source_type='synthetic'` and the research-demonstration notice. Never present simulator output as Fiji MET readings or real forecast skill.
 - Locations come only from the existing PostgreSQL registry (`ml/synthetic/locations.csv` mirrors it); never invent monitoring locations.
+- **V3 scenario study is research-only; nothing is promoted — deployed model stays V1.** Protocol in `docs/SYNTHETIC_V3_PROTOCOL.md`, numbers in `docs/SYNTHETIC_V3_RESULTS.md`. Train/tune per scenario with `python -m ml.synthetic.train_v3`, pre-registered baselines + OOD transfer with `python -m ml.synthetic.transfer_v3` (all `backend/.venv`, repo root, refuse-overwrite). Research bundles published with `python -m ml.synthetic.finalize_v3`; served read-only via `GET /api/synthetic/research/*` (`SYNTHETIC_RESEARCH_DIR`, default `ml/artifacts/synthetic/v3`) and shown at frontend `/research`. Do not touch v1 serving (`ml/artifacts/synthetic/v1`, `backend/app/services/synthetic_inference.py`).
+- Bounded foundation-model benchmark (`python -m ml.synthetic.foundation_v3 --model {tabicl,tabfm}`) runs only in its own venvs (`ml/envs/*`), uses a label-blind context budget and never trains on the full partition. Results are a bounded comparison, not full-partition scores; tabpfn needs a licensed checkpoint and is skipped by default. Do not treat foundation rows as promotion candidates.
 
 ## Frontend conventions
 
-- Live backend surface is only auth, admin account review, locations, predictions replay, and alerts APIs. Weather observations, dashboard metrics, map risk markers, and alert demo actions are local prototype data from `src/data/prototypeData.ts` and `src/prototype/`. Label screens accordingly when presenting or extending (see `docs/PROTOTYPE_UI.md`).
+- Live backend surface is only auth, admin account review, locations, predictions replay, alerts APIs, and the read-only synthetic research endpoints (`/api/synthetic/research/*`, shown at `/research`). Weather observations, dashboard metrics, map risk markers, and alert demo actions are local prototype data from `src/data/prototypeData.ts` and `src/prototype/`. Label screens accordingly when presenting or extending (see `docs/PROTOTYPE_UI.md`).
 - JWT stored in `sessionStorage`; role comes from `GET /api/auth/me`, never decoded from the token.
 - Tests live next to source (`*.test.ts(x)`), jsdom env, setup in `src/test/setup.ts`.
 

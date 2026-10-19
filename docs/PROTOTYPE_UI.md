@@ -21,6 +21,7 @@ flood-operation screens. The badges in the workspace help identify the source:
 | Flood-risk levels and AI predictions | `prototypeData.ts` | No | Demo data |
 | MET operational dashboard metrics | Derived from local prototype data | No | Demo data |
 | Flood-alert list and alert actions | React prototype state | No | Demo workflow |
+| `/research` synthetic scenario study | Read-only FastAPI + published research bundles | No (bundles on disk) | Research only |
 | OpenStreetMap basemap | Public internet tile service | External tiles only | Visual context |
 
 The prototype weather values, risk levels, predictions, alert messages, and
@@ -72,6 +73,7 @@ Browser
 | `/admin/dashboard` | Approved `MET_ADMIN` | Local demo data | Operational summary and recent activity |
 | `/admin/alerts` | Approved `MET_ADMIN` | Local in-memory data | Demonstrate an alert-review workflow |
 | `/admin/users/pending` | Approved `MET_ADMIN` | Live admin API | Approve or reject actual registered accounts |
+| `/research` | Authenticated (any role) | Live read-only research API | Synthetic scenario study, research only |
 
 Authenticated users visiting a public authentication page are redirected to
 their workspace. A `MET_ADMIN` goes to `/admin/dashboard`; a community user goes
@@ -163,6 +165,31 @@ These alert actions:
 
 This is different from `/admin/users/pending`: account approval and rejection
 on that page are real backend operations and persist in PostgreSQL.
+
+### Synthetic research view (research only, nothing promoted)
+
+`/research` is a lecturer-facing, read-only view of the synthetic scenario study
+documented in [docs/SYNTHETIC_V3_RESULTS.md](SYNTHETIC_V3_RESULTS.md). It calls
+`GET /api/synthetic/research/{info,frame,storms,series}`, which serve published
+research bundles from `SYNTHETIC_RESEARCH_DIR` (default
+`ml/artifacts/synthetic/v3`) with no database writes and no path into alert
+creation.
+
+- Scenario selector lists the controlled, realistic, and stress scenarios;
+  unpublished scenarios are disabled.
+- The frame table shows all 12 monitored locations for a chosen hour: simulated
+  weather, provisional probability and risk band, and (display-only) evaluation
+  labels under `Ground truth …` column titles.
+- Storm replay lists simulated storms and, per selected location, a timeline of
+  alarm episodes against onsets.
+
+Ground truth is served only from a separate `research_truth.parquet` under the
+`ground_truth` key with `research_view_only: true`; the scorer never receives
+labels. Every response carries `source_type: synthetic` and a
+research-demonstration notice. This page is not a Fiji MET forecast, not an
+operational dashboard, and shares nothing with the deployed V1 serving path
+(`/api/synthetic/*`), the alert demo, or notifications. The badge on the page
+reads **Synthetic Data — Research Demonstration**.
 
 ## Map tiles and internet access
 

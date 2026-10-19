@@ -65,6 +65,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <span>Synthetic replay</span>
           </NavLink>
 
+          <NavLink to="/research" onClick={onClose}>
+            <SidebarIcon name="map" />
+            <span>Scenario research</span>
+          </NavLink>
+
           {isAdmin && (
             <NavLink to="/admin/alerts" onClick={onClose}>
               <SidebarIcon name="alerts" />
