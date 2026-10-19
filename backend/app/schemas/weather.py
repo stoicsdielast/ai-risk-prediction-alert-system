@@ -6,6 +6,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validato
 MEASUREMENTS = (
     "rainfall_mm", "temperature_c", "humidity_pct", "pressure_hpa", "wind_speed_mps",
     "wind_direction_deg", "river_level_m", "river_discharge_m3s", "soil_moisture_pct",
+    "upstream_rainfall_mm", "coastal_tide_m",
 )
 RESEARCH_NOTICE = "Synthetic research demonstration only; not Fiji MET readings or a real forecast."
 
@@ -26,6 +27,10 @@ class WeatherCreate(BaseModel):
     river_level_m: float | None = Field(default=None, ge=-100, le=1000)
     river_discharge_m3s: float | None = Field(default=None, ge=0, le=1000000)
     soil_moisture_pct: float | None = Field(default=None, ge=0, le=100)
+    upstream_rainfall_mm: float | None = Field(default=None, ge=0, le=5000)
+    upstream_rainfall_period_minutes: int | None = Field(default=None, ge=1, le=10080)
+    coastal_tide_m: float | None = Field(default=None, ge=-20, le=20)
+    gauge_datum: str | None = Field(default=None, min_length=1, max_length=100)
 
     @field_validator("observed_at")
     @classmethod
@@ -41,6 +46,8 @@ class WeatherCreate(BaseModel):
             raise ValueError("At least one measurement is required; missing values must be null")
         if (self.rainfall_mm is None) != (self.rainfall_period_minutes is None):
             raise ValueError("Rainfall amount and accumulation period must be supplied together")
+        if (self.upstream_rainfall_mm is None) != (self.upstream_rainfall_period_minutes is None):
+            raise ValueError("Upstream rainfall amount and accumulation period must be supplied together")
         return self
 
 
@@ -61,6 +68,10 @@ class WeatherResponse(BaseModel):
     river_level_m: float | None
     river_discharge_m3s: float | None
     soil_moisture_pct: float | None
+    upstream_rainfall_mm: float | None
+    upstream_rainfall_period_minutes: int | None
+    coastal_tide_m: float | None
+    gauge_datum: str | None
     missing_fields: list[str]
     stale: bool
     age_seconds: float

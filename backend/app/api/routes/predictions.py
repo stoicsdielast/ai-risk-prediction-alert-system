@@ -6,17 +6,47 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, require_met_admin
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.models.research_prediction import ResearchPrediction
 from app.models.user import User
 from app.schemas.research_prediction import ResearchPredictionRequest, ResearchPredictionResponse
 from app.services.research_inference import InvalidResearchInput, ModelUnavailable, load_model, presentation_tier
+from app.schemas.generated_prediction import GeneratePrediction, GeneratedPredictionResponse
+from app.services import prediction_generation
+from app.services.alert_service import AlertServiceError
+from app.services.v1_features import DataUnavailable
+from app.services.v1_model import load_v1_model, V1ModelUnavailable
 
 router = APIRouter(prefix="/api/predictions", tags=["research predictions"])
 SOURCE = "https://github.com/Srabon-bot/Bangladesh-flood-data-set"
 DISCLAIMER = "Research Proof of Concept — Bangladesh historical replay. Not validated for Fiji or operational public warnings."
+
+
+def get_generation_model():
+    return load_v1_model(str(get_settings().synthetic_model_dir.resolve()))
+
+
+@router.post("/generate", response_model=GeneratedPredictionResponse)
+def generate_prediction(data: GeneratePrediction, db: Session = Depends(get_db), user: User = Depends(require_met_admin)):
+    try:
+        model = get_generation_model()
+        return prediction_generation.generate(db, data, user, model)
+    except DataUnavailable as error:
+        db.rollback()
+        return GeneratedPredictionResponse(status="DATA_UNAVAILABLE", reason=str(error),
+            location_id=data.location_id, timestamp=data.timestamp, source=data.source,
+            source_type=data.source_type, historical_replay=data.historical_replay)
+    except V1ModelUnavailable as error:
+        db.rollback()
+        raise HTTPException(503, str(error)) from error
+    except (SQLAlchemyError, AlertServiceError) as error:
+        db.rollback()
+        raise HTTPException(503, "Prediction transaction failed; no partial prediction or alert was saved") from error
+    except Exception:
+        db.rollback()
+        raise
 
 
 def get_research_model():

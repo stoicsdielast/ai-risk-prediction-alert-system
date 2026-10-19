@@ -138,13 +138,19 @@ def ensure_transition(alert: Alert, target: AlertStatus) -> None:
 
 
 @_database_operation
-def create_alert_from_prediction(db: Session, prediction: Prediction) -> Alert | None:
+def create_alert_from_prediction(db: Session, prediction: Prediction, *, research_actor_id: int | None = None):
     """Flush, but do not commit: caller can persist prediction + alert atomically.
 
     Pass a saved/flushed Prediction from this session. The persisted row is
     locked/re-read so caller-supplied or stale risk/location values aren't trusted.
     A reviewed historical alert is also reused; retries never revive it.
     """
+    # Synthetic rows never enter the operational lookup, constraints or notification hook.
+    # Preserve the existing operational contract while sharing the flush-only entrypoint.
+    from app.models.synthetic import SyntheticPrediction
+    if isinstance(prediction, SyntheticPrediction):
+        from app.services.synthetic_alert_service import create_pending
+        return create_pending(db, prediction, research_actor_id)
     if prediction.id is None:
         raise InvalidAlertDataError("Save and flush the prediction before creating its alert")
     stored = _prediction(db, prediction.id)

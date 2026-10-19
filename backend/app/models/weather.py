@@ -25,6 +25,10 @@ class ObservationColumns:
     river_level_m: Mapped[float | None] = mapped_column(Float)
     river_discharge_m3s: Mapped[float | None] = mapped_column(Float)
     soil_moisture_pct: Mapped[float | None] = mapped_column(Float)
+    upstream_rainfall_mm: Mapped[float | None] = mapped_column(Float)
+    upstream_rainfall_period_minutes: Mapped[int | None] = mapped_column(Integer)
+    coastal_tide_m: Mapped[float | None] = mapped_column(Float)
+    gauge_datum: Mapped[str | None] = mapped_column(String(100))
 
 
 class WeatherObservation(ObservationColumns, Base):

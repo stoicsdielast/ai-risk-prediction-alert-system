@@ -767,3 +767,13 @@ The weather storage/API and optional standalone ingestion worker are documented 
 Run `.venv/bin/python -m alembic upgrade head` on an existing initialized database
 before using these endpoints. Genuine and synthetic weather are physically separated;
 no external weather provider is configured by default.
+
+## V1 observation-driven prediction generation
+
+`POST /api/predictions/generate` now supports authenticated MET-admin research
+inference from stored synthetic weather, with exact V1 features, immutable provenance,
+and atomic optional PENDING demo-alert creation. The genuine operational path remains
+blocked; the selected model and V1/V2/V3 artifacts are unchanged.
+`GET /api/risk/{location}` is retired (410 Gone), replacing its hardcoded HIGH/0.82.
+See [V1 prediction workflow](../docs/V1_PREDICTION_WORKFLOW.md) for migrations,
+bounded weather imports, source restrictions, example requests and real PostgreSQL tests.

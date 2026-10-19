@@ -3,7 +3,9 @@
 Implemented 20 October 2026. Requirements: `TEAM_TASK_TICKETS.md` AR-01/AR-02 and
 ingestion reliability from AR-04, plus the user's scheduled-ingestion requirements.
 No separate formal SRS/SAD was located (available PDF/DOCX files are team tickets).
-The five-functionality audit remains a historical snapshot at `f60a7d8`.
+The five-functionality audit retains its historical snapshot at `f60a7d8` with a
+verified implementation update. See [V1 prediction workflow](V1_PREDICTION_WORKFLOW.md)
+for the new source-specific observation-to-model path.
 
 ## Storage and provenance
 
@@ -39,6 +41,10 @@ Synthetic responses include the research-demonstration notice, including empty f
 | `river_level_m` | metres relative to source gauge datum, −100–1000 | Nullable; do not compare different gauge datums |
 | `river_discharge_m3s` | m³/s, 0–1,000,000 | Nullable |
 | `soil_moisture_pct` | %, 0–100 | Nullable |
+| `upstream_rainfall_mm` | mm, 0–5000 | Nullable; requires its own accumulation period |
+| `upstream_rainfall_period_minutes` | minutes, 1–10080 | Present iff upstream rainfall is present |
+| `coastal_tide_m` | metres relative to declared datum, −20–20 | Nullable |
+| `gauge_datum` | Reference identifier, 1–100 characters | Nullable for storage; required for V1 compatibility |
 
 These are broad input plausibility limits, not official MET warning thresholds.
 At least one measurement is required. NaN/infinity, extra fields and alternate-unit
@@ -155,10 +161,11 @@ Potential India-contract mapping (not an implemented or validated Fiji model ada
 | River Discharge (m³/s) / Water Level (m) | `river_discharge_m3s` / `river_level_m`, with compatible gauge datum |
 | Elevation (m), Population Density, Infrastructure, Land Cover, Soil Type | Not supplied by this weather workflow; approved location metadata still needed |
 
-Pressure, wind and soil moisture are stored but must not be appended to a fixed model's
-feature schema. Never include outcome labels. A complete AR-03 12-feature builder,
-operational inference, prediction persistence and alert handoff are outside this task.
-No claim is made that these observations alone satisfy any of the three distinct models.
+The mapping above concerns only the older India model. The deployed synthetic V1
+instead uses 56 features, including pressure, wind and soil moisture. Its exact builder,
+source-specific geography, saved-pipeline inference, persistence and isolated pending
+alert workflow are now documented in [V1 prediction workflow](V1_PREDICTION_WORKFLOW.md).
+Never include outcome labels or merge the three models' incompatible schemas.
 
 ## Verification and remaining work
 

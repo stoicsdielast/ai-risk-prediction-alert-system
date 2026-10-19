@@ -1,5 +1,35 @@
 # Five-Functionality Audit — Flood Risk Prediction and Community Alert System (IS314)
 
+## Verified implementation update — 20 October 2026
+
+The original audit below is retained as a **historical baseline at `f60a7d8`**.
+Its missing-weather, dummy-endpoint and absent research-handoff findings are superseded
+by this update; the remaining genuine-forecast limitations still apply.
+
+| Functionality | Current verified status |
+|---|---|
+| 1 Dashboard | PARTIAL; frontend data integration still pending |
+| 2 Weather management | Backend storage, authorized ingestion, latest/history, source separation and configurable worker implemented; actual PostgreSQL verified; external provider not configured |
+| 3 AI prediction | COMPLETE for the bounded V1 research workflow: persisted weather → 56-feature builder → unchanged trained pipeline → persisted synthetic prediction → optional PENDING demo alert. Genuine operational Fiji forecasts remain BLOCKED |
+| 4 Flood mapping | PARTIAL; previous integration gaps remain |
+| 5 Alerts/testing | Existing operational lifecycle preserved; automatic isolated synthetic handoff now verified; operational model handoff, expiry/cooldown remain pending |
+
+Evidence: `app/services/v1_features.py`, `v1_model.py`, `prediction_generation.py`,
+`synthetic_alert_service.py`, `app/api/routes/predictions.py` and
+`tests/test_v1_generation.py`, `weather_tests/test_generation_postgres.py` (all under
+`backend/`). Real PostgreSQL tests verify all 12 locations, concurrency/idempotency,
+durability and prediction/provenance rollback on alert failure. The real configured
+database smoke verified PENDING alerts for Nausori/Sigatoka and no operational writes.
+
+`GET /api/risk/{location}` now returns 410; no hardcoded probability remains.
+`POST /api/predictions/generate` is MET-admin authenticated, explicitly research-only,
+source-aware and returns DATA_UNAVAILABLE for insufficient/incompatible inputs.
+No V2/V3 promotion occurred. Full contracts, feature provenance and genuine-forecast
+blockers: [V1 prediction workflow](V1_PREDICTION_WORKFLOW.md) and
+[Weather Data Management](WEATHER_DATA_MANAGEMENT.md).
+
+## Historical audit follows
+
 **Audited:** 19 October 2026, against commit `f60a7d8` on `parvish-dev`.
 **Method:** Source-code and database inspection, live API integration checks via FastAPI
 `TestClient` against the running schema, and full test-suite execution. Requirement IDs

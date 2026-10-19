@@ -40,7 +40,7 @@ def postgres(monkeypatch):
     try:
         # Existing operational baseline is create_all; both versioned migrations are real.
         tables = [table for table in Base.metadata.sorted_tables
-                  if not table.name.startswith(("synthetic_", "weather_", "demo_weather_"))]
+                  if not table.name.startswith(("synthetic_", "weather_", "demo_weather_", "v1_weather_", "generated_prediction_"))]
         Base.metadata.create_all(engine, tables=tables)
         monkeypatch.setattr(sessions, "get_engine", lambda: engine)
         command.upgrade(Config("alembic.ini"), "head")

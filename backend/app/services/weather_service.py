@@ -62,7 +62,8 @@ def insert_observation(db: Session, data: WeatherCreate, submitted_by=None):
 
 def present(row):
     age = max(0, (datetime.now(timezone.utc) - utc(row.observed_at)).total_seconds())
-    keys = ["id", "location_id", "source", "source_type", "rainfall_period_minutes", *MEASUREMENTS]
+    keys = ["id", "location_id", "source", "source_type", "rainfall_period_minutes",
+            "upstream_rainfall_period_minutes", "gauge_datum", *MEASUREMENTS]
     return WeatherResponse(
         **{key: getattr(row, key) for key in keys}, observed_at=utc(row.observed_at),
         received_at=utc(row.received_at), age_seconds=age,

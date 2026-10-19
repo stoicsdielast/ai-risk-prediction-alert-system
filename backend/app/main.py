@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.admin import router as admin_router
@@ -57,10 +57,4 @@ def health_check():
 
 @app.get("/api/risk/{location}")
 def get_flood_risk(location: str):
-    # Dummy response for now.
-    # Your AI model will eventually generate this.
-    return {
-        "location": location,
-        "risk_level": "HIGH",
-        "probability": 0.82
-    }
+    raise HTTPException(410, "Placeholder retired. Use /api/locations for persisted map data or authenticated /api/predictions/generate for explicit V1 research inference.")
