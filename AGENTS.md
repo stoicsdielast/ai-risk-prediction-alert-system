@@ -6,11 +6,11 @@ Multi-part student project; not a monorepo with shared tooling. Each part has it
 
 - `frontend/` — React + TypeScript + Vite app (Tailwind 4, Leaflet, react-router)
 - `backend/` — FastAPI app (`backend/app/`), plus a standalone AI package (`backend/ai/`) that does not import app settings or register routes
-- `ml/` — separate Bangladesh historical research benchmark (own pinned deps, own venv expectations)
+- `ml/` — separate Bangladesh historical research benchmark (own pinned deps, own venv expectations), now also home to `ml/synthetic/`, the approved synthetic Fiji simulator/training pipeline (`docs/SYNTHETIC_METHODOLOGY.md`)
 - `docs/` — guides; root `README.md` links the important ones
 - Root `ai/` and `database/` are empty placeholders; `archive/` holds the Kaggle India CSV used by `backend/ai`
 
-Three AI codebases exist and are not interchangeable: `backend/ai` (India 12-feature pipeline), `ml/` (Bangladesh benchmark). Do not merge their schemas, data, or artifacts.
+Three AI codebases exist and are not interchangeable: `backend/ai` (India 12-feature pipeline), `ml/` (Bangladesh benchmark), `ml/synthetic` (Fiji simulator). Do not merge their schemas, data, or artifacts.
 
 ## Commands (verified)
 
@@ -56,6 +56,14 @@ There is no repo-wide lint/typecheck, no CI workflows, and no pre-commit config.
 - The finalized `ml/runs/` output refuses overwrite; reproduction runs must use `--out ml/runs/reproduction`.
 - `ml/.venv/bin/python -m ml.download --offline` revalidates existing downloads without network.
 - Results are Bangladesh proxy labels; never present them as validated Fiji forecasts (this constraint appears throughout docs — preserve it).
+
+## Synthetic Fiji pipeline (ml/synthetic)
+
+- Generate/train/report/stress run from the repo root with `backend/.venv`: `python -m ml.synthetic.generate|train|report|stress`. Outputs refuse overwrite; use fresh directories.
+- Serving bundle is published to `ml/artifacts/synthetic/v1/` (gitignored) and consumed by `backend/app/services/synthetic_inference.py`; import via `python -m app.db.import_synthetic` after `alembic upgrade head`.
+- `SYNTHETIC_DEMO_ENABLED=true` gates the isolated synthetic alert demo; default false. Synthetic tables/feeds are separate from operational predictions/alerts.
+- Every synthetic view/response must carry `source_type='synthetic'` and the research-demonstration notice. Never present simulator output as Fiji MET readings or real forecast skill.
+- Locations come only from the existing PostgreSQL registry (`ml/synthetic/locations.csv` mirrors it); never invent monitoring locations.
 
 ## Frontend conventions
 

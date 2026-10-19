@@ -738,3 +738,24 @@ authenticated `/api/predictions/flood-risk` endpoint, public model-info and repl
 reads, model setup and the additional `research_predictions` table. These are
 historical Bangladesh proxy-label results, not validated Fiji forecasts. Run
 `python -m app.db.init_db` after updating to create the research table.
+
+# Synthetic research demonstration API
+
+The isolated synthetic replay and alert-approval demonstration is documented in
+[the synthetic methodology guide](../docs/SYNTHETIC_METHODOLOGY.md). Summary:
+
+- Tables: `synthetic_datasets`, `synthetic_observations`, `synthetic_predictions`,
+  `synthetic_alerts` (Alembic revision `20261019_synthetic`); they are never
+  mixed with operational predictions or alerts.
+- Setup: publish the serving bundle to `ml/artifacts/synthetic/v1/`, run
+  `python -m alembic upgrade head`, then
+  `python -m app.db.import_synthetic --dataset ../ml/data/synthetic_fiji/v1`
+  (checksum- and registry-verified, idempotent).
+- Reads: `GET /api/synthetic/info`, `GET /api/synthetic/frame?timestamp=`
+  (timezone-aware exact hourly timestamps), `GET /api/synthetic/alerts`.
+- Demo writes (require `SYNTHETIC_DEMO_ENABLED=true` and a MET_ADMIN token):
+  `POST /api/synthetic/admin/alerts` (only for HIGH/VERY_HIGH provisional
+  forecasts) and `POST /api/synthetic/admin/alerts/{id}/approve`.
+- Every response carries `source_type: "synthetic"` and a research-demonstration
+  notice. These are simulator outputs, never official Fiji MET readings or
+  emergency warnings.

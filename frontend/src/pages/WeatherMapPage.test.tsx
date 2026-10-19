@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/client'
@@ -73,9 +74,11 @@ const LOCATIONS: ApiLocation[] = [
 
 function renderPage() {
   return render(
-    <PrototypeDataProvider>
-      <WeatherMapPage />
-    </PrototypeDataProvider>,
+    <MemoryRouter>
+      <PrototypeDataProvider>
+        <WeatherMapPage />
+      </PrototypeDataProvider>
+    </MemoryRouter>,
   )
 }
 

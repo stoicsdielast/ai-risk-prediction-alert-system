@@ -4,6 +4,7 @@ AI-powered flood risk prediction system designed for Fiji.
 
 ## Documentation
 
+- [Synthetic Fiji simulation: methodology, evaluation, and limitations](docs/SYNTHETIC_METHODOLOGY.md)
 - [Bangladesh research proof of concept: reproduction, API and limitations](docs/RESEARCH_BANGLADESH.md)
 - [Measured Bangladesh dataset audit and model report](ml/artifacts/technical_report.md)
 - [Presentation handbook: project, architecture, security, privacy, demo, and deployment](docs/PRESENTATION_HANDBOOK.md)
