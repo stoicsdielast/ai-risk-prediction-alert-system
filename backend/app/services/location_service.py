@@ -1,12 +1,17 @@
 from sqlalchemy import func, select
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.models.location import Division, Location
 from app.models.prediction import Prediction
+from app.schemas.location import LocationCreate, LocationUpdate
 
 
 class LocationNotFoundError(Exception):
+    pass
+
+
+class LocationConflictError(Exception):
     pass
 
 
@@ -56,6 +61,52 @@ def get_location_by_slug(db: Session, slug: str) -> Location:
 
     if location is None:
         raise LocationNotFoundError
+    return location
+
+
+def get_location_by_id(db: Session, location_id: int) -> Location:
+    """Admin read: includes inactive locations so they can be reactivated."""
+    location = db.get(Location, location_id)
+    if location is None:
+        raise LocationNotFoundError
+    return location
+
+
+def create_location(db: Session, data: LocationCreate) -> Location:
+    """Administrator create. New locations are active immediately."""
+    location = Location(**data.model_dump(), is_active=True)
+    db.add(location)
+    try:
+        db.flush()
+    except IntegrityError as exc:
+        db.rollback()
+        raise LocationConflictError(
+            "A location with this slug already exists"
+        ) from exc
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise LocationServiceError from exc
+    db.commit()
+    return location
+
+
+def update_location(db: Session, location_id: int, data: LocationUpdate) -> Location:
+    """Administrator update; slug is immutable. Deactivation keeps the row so
+    prediction/alert history stays intact."""
+    location = get_location_by_id(db, location_id)
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(location, field, value)
+
+    try:
+        db.flush()
+    except IntegrityError as exc:
+        db.rollback()
+        raise LocationConflictError("Location update conflicts with existing data") from exc
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise LocationServiceError from exc
+    db.commit()
     return location
 
 

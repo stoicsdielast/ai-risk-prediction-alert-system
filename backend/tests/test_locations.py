@@ -49,6 +49,7 @@ def test_list_locations_returns_coordinates_and_division(client: TestClient, see
         "division_label": "Central Division",
         "latitude": -18.1416,
         "longitude": 178.4419,
+        "is_active": True,
     }
 
 

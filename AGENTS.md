@@ -31,7 +31,7 @@ Frontend (from `frontend/`):
 
 ```bash
 npm run lint        # oxlint
-npm run test        # vitest, single run (59 tests)
+npm run test        # vitest, single run (99 tests)
 npm run build       # tsc -b && vite build — run after lint when verifying
 ```
 

@@ -16,7 +16,8 @@ export function toMapLocation(location: ApiLocation): MapLocation {
     prediction: prediction && {
       riskLevel: prediction.risk_level,
       floodProbabilityPercent: Math.round(prediction.flood_probability * 100),
-      isSample: prediction.is_sample,
+      provenance: prediction.is_sample ? 'sample' : 'model',
+      modelVersion: prediction.model_version,
       predictedAt: prediction.predicted_at,
     },
   }

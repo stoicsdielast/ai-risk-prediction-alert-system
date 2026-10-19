@@ -3,8 +3,14 @@ import type { PublicAlert } from '../../types/alert'
 import type { MapLocation, MapPrediction } from '../../types/location'
 import type { ApiWeatherObservation } from '../../types/weather'
 import type { RiskLevel } from '../../types/prototype'
-import { formatDateTime, formatRelativeTime } from '../../utils/date'
+import {
+  formatDateTime,
+  formatRelativeTime,
+  isStaleTimestamp,
+  PREDICTION_STALE_AFTER_HOURS,
+} from '../../utils/date'
 import { DataPill, RiskPill } from '../pills/DataPill'
+import type { PillValue } from '../pills/DataPill'
 
 const RISK_HEADINGS: Record<RiskLevel, string> = {
   LOW: 'Low flood risk',
@@ -72,6 +78,23 @@ function observationMetrics(
   return metrics
 }
 
+const PROVENANCE_PILLS: Record<MapPrediction['provenance'], PillValue> = {
+  model: 'AI_PREDICTION',
+  sample: 'SAMPLE_RISK',
+  synthetic: 'SYNTHETIC_PREDICTION',
+}
+
+function provenanceNote(prediction: MapPrediction): string {
+  switch (prediction.provenance) {
+    case 'model':
+      return `Model ${prediction.modelVersion} · decision-support estimate · not an official public warning`
+    case 'sample':
+      return 'Labelled sample for testing · not a real forecast or official warning'
+    case 'synthetic':
+      return 'Synthetic research simulation · not Fiji MET data or a real forecast'
+  }
+}
+
 function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
   if (!prediction) {
     return (
@@ -85,10 +108,12 @@ function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
     )
   }
 
+  const stale = isStaleTimestamp(prediction.predictedAt)
+
   return (
     <section className="prediction-panel" aria-labelledby="prediction-title">
       <div className="prediction-panel__heading">
-        <DataPill value={prediction.isSample ? 'SAMPLE_RISK' : 'AI_PREDICTION'} />
+        <DataPill value={PROVENANCE_PILLS[prediction.provenance]} />
         <span>{prediction.floodProbabilityPercent}% flood probability</span>
       </div>
       <h3 id="prediction-title">{RISK_HEADINGS[prediction.riskLevel]}</h3>
@@ -100,6 +125,12 @@ function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
         >
           {formatRelativeTime(prediction.predictedAt)}
         </time>
+        {stale && (
+          <>
+            {' '}
+            <DataPill value="STALE" compact />
+          </>
+        )}
         .
       </p>
       <div
@@ -115,11 +146,13 @@ function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
           style={{ width: `${prediction.floodProbabilityPercent}%` }}
         />
       </div>
-      <small>
-        {prediction.isSample
-          ? 'Labelled sample for testing · not a real forecast or official warning'
-          : 'Decision-support estimate · not an official public warning'}
-      </small>
+      <small>{provenanceNote(prediction)}</small>
+      {stale && (
+        <small>
+          This prediction is more than {PREDICTION_STALE_AFTER_HOURS} hours old
+          — treat it as out of date.
+        </small>
+      )}
     </section>
   )
 }

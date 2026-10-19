@@ -86,7 +86,7 @@ const LOCATIONS: ApiLocation[] = [
   },
 ]
 
-function renderPage() {
+function renderPage(feedOverrides: Record<string, unknown> = {}) {
   return render(
     <MemoryRouter>
       <PublicAlertContext.Provider
@@ -97,6 +97,7 @@ function renderPage() {
           refreshing: false,
           updatedAt: '2026-10-20T00:00:00Z',
           refresh: () => {},
+          ...feedOverrides,
         }}
       >
         <WeatherMapPage />
@@ -107,7 +108,7 @@ function renderPage() {
 
 function markers() {
   return within(screen.getByRole('list', { name: 'Map markers' }))
-    .getAllByRole('listitem')
+    .queryAllByRole('listitem')
     .map((item) => item.textContent)
 }
 
@@ -257,5 +258,88 @@ describe('WeatherMapPage', () => {
 
     expect(await screen.findByText('No monitored locations yet')).toBeInTheDocument()
     expect(screen.queryByText('Loading monitored locations…')).not.toBeInTheDocument()
+  })
+
+  it('groups the visible location list under division headings in canonical order', async () => {
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    const list = screen.getByLabelText('Visible monitored locations')
+    expect(
+      within(list)
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent),
+    ).toEqual(['Central Division', 'Western Division', 'Northern Division'])
+  })
+
+  it('filters by division and combines with the risk filter', async () => {
+    const user = userEvent.setup()
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    await user.click(screen.getByRole('button', { name: /^Western/ }))
+    expect(markers()).toEqual(['Nadi'])
+
+    // Low risk exists only in the Northern Division, so the filters combine to
+    // an empty result.
+    await user.click(screen.getByRole('button', { name: /^Low/ }))
+    expect(markers()).toEqual([])
+
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(markers()).toHaveLength(3)
+  })
+
+  it('shows an alerts-feed error banner when approved alerts cannot be loaded', async () => {
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage({ error: 'Cannot reach the alerts feed.' })
+
+    expect(
+      await screen.findByText(/Approved alerts shown here may be out of date/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Cannot reach the alerts feed\./),
+    ).toBeInTheDocument()
+  })
+
+  it('labels a prediction older than 24 hours as stale', async () => {
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    const details = screen.getByRole('complementary')
+    expect(await within(details).findByText('Stale')).toBeInTheDocument()
+    expect(
+      within(details).getByText(/more than 24 hours old/),
+    ).toBeInTheDocument()
+  })
+
+  it('does not label a fresh prediction as stale', async () => {
+    mockedGetLocations.mockResolvedValue(
+      LOCATIONS.map((location) =>
+        location.slug === 'nadi'
+          ? {
+              ...location,
+              prediction: samplePrediction({
+                predicted_at: new Date().toISOString(),
+              }),
+            }
+          : location,
+      ),
+    )
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    const details = screen.getByRole('complementary')
+    expect(within(details).queryByText('Stale')).not.toBeInTheDocument()
+    expect(
+      within(details).queryByText(/more than 24 hours old/),
+    ).not.toBeInTheDocument()
   })
 })

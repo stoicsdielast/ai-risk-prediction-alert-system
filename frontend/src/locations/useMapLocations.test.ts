@@ -34,9 +34,28 @@ describe('toMapLocation', () => {
       prediction: {
         riskLevel: 'HIGH',
         floodProbabilityPercent: 74,
-        isSample: true,
+        provenance: 'sample',
+        modelVersion: 'sample-demo-not-a-model-result',
         predictedAt: '2026-10-13T00:00:00Z',
       },
+    })
+  })
+
+  it('maps a stored model prediction as model provenance', () => {
+    const location = toMapLocation({
+      ...navua,
+      prediction: {
+        risk_level: 'HIGH',
+        flood_probability: 0.736,
+        model_version: 'synthetic-fiji-v1-catboost__none',
+        is_sample: false,
+        predicted_at: '2026-10-20T00:00:00Z',
+      },
+    })
+
+    expect(location.prediction).toMatchObject({
+      provenance: 'model',
+      modelVersion: 'synthetic-fiji-v1-catboost__none',
     })
   })
 

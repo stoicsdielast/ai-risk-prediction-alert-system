@@ -5,6 +5,7 @@ from app.api.routes.admin import router as admin_router
 from app.api.routes.alerts import admin_router as admin_alert_router
 from app.api.routes.alerts import public_router as public_alert_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.locations import admin_router as admin_location_router
 from app.api.routes.locations import router as locations_router
 from app.api.routes.predictions import router as predictions_router
 from app.api.routes.synthetic import router as synthetic_router
@@ -35,6 +36,7 @@ app.include_router(admin_router)
 app.include_router(admin_alert_router)
 app.include_router(public_alert_router)
 app.include_router(locations_router)
+app.include_router(admin_location_router)
 app.include_router(predictions_router)
 app.include_router(synthetic_router)
 app.include_router(synthetic_research_router)

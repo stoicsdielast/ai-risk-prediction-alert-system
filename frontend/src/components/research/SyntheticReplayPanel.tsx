@@ -76,7 +76,7 @@ export function SyntheticReplay() {
     latitude: location.latitude, longitude: location.longitude, riskLevel: location.risk_category,
     prediction: location.risk_category && location.probability != null ? {
       riskLevel: location.risk_category, floodProbabilityPercent: Math.round(location.probability * 100),
-      isSample: true, predictedAt: location.timestamp,
+      provenance: 'synthetic', modelVersion: location.model_version, predictedAt: location.timestamp,
     } : null,
   })) ?? [], [frame])
   const selected = frame?.locations.find(location => location.slug === selectedId)

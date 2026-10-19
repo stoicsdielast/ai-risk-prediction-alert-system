@@ -3,15 +3,16 @@
 ## Verified implementation update — 20 October 2026
 
 The original audit below is retained as a **historical baseline at `f60a7d8`**.
-Its missing-weather, dummy-endpoint and absent research-handoff findings are superseded
-by this update; the remaining genuine-forecast limitations still apply.
+Its missing-weather, dummy-endpoint, prototype-frontend and absent research-handoff
+findings are superseded by this update (and by F1/F4); the remaining genuine-forecast
+limitations still apply.
 
 | Functionality | Current verified status |
 |---|---|
 | 1 Dashboard | COMPLETE for available backend feeds: admin/user dashboards and the map now derive locations, metrics, recent predictions, stored weather and approved alerts from live APIs; fabricated prototype/official-warning data removed. Remaining scope: no dedicated weather-station network or MET dashboard-summary endpoint exists yet |
 | 2 Weather management | Backend storage, authorized ingestion, latest/history, source separation and configurable worker implemented; actual PostgreSQL verified; external provider not configured |
 | 3 AI prediction | COMPLETE for the bounded V1 research workflow: persisted weather → 56-feature builder → unchanged trained pipeline → persisted synthetic prediction → optional PENDING demo alert. Genuine operational Fiji forecasts remain BLOCKED |
-| 4 Flood mapping | PARTIAL; previous integration gaps remain |
+| 4 Flood mapping | COMPLETE for the F4 scope: all 12 DB locations mapped with live predictions/weather/approved alerts, division grouping/filtering, prediction-provenance and stale labels, tile-failure and feed-error states, and a MET-admin location create/update/deactivation API. Deferred: a single joined risk feed (`P1-2`) — the map consumes the separate weather and alert endpoints by design |
 | 5 Alerts/testing | Existing operational lifecycle preserved; automatic isolated synthetic handoff now verified; operational model handoff, expiry/cooldown remain pending |
 
 Evidence: `app/services/v1_features.py`, `v1_model.py`, `prediction_generation.py`,
@@ -26,6 +27,18 @@ Frontend evidence (F1): `frontend/src/api/weather.ts`,
 `pages/AdminDashboardPage.tsx`, `components/map/LocationDetailCard.tsx` and their
 tests; `src/data/prototypeData.ts` and `src/prototype/` were deleted.
 Verified: 79 frontend tests passed, oxlint clean, `tsc -b && vite build` passed.
+
+Flood-mapping evidence (F4): `app/api/routes/locations.py:34-126` (admin router,
+POST/PATCH), `app/schemas/location.py:26-64`, `app/services/location_service.py:67-108`,
+`tests/test_admin_locations.py` (22 tests); frontend `pages/WeatherMapPage.tsx:25,57-90,142,303`,
+`utils/date.ts:28-40`, `components/map/WeatherMap.tsx:95-124`,
+`components/map/LocationDetailCard.tsx:81-149` with 16/6/11 map test cases.
+Verified against real PostgreSQL: 35 E2E checks passed (12 locations vs
+`ml/synthetic/locations.csv`, division counts, 8 sampled predictions across all four risk
+categories, authz 401/403/409/422, deactivation hides a location and blocks weather
+writes, reactivation restores it, 2100 stored synthetic weather rows read back as stale).
+99 frontend tests passed, oxlint clean, `tsc -b && vite build` passed; backend
+378 passed / 9 skipped, PostgreSQL weather 4 passed, ML 46 passed / 1 skipped.
 
 `GET /api/risk/{location}` now returns 410; no hardcoded probability remains.
 `POST /api/predictions/generate` is MET-admin authenticated, explicitly research-only,
@@ -106,15 +119,20 @@ Model layering is disciplined and verified: V1 deployed, V2 not promoted, V3
 research-only, foundation models (TabICL/TabFM run, TabPFN skipped) research-only with
 no serving path.
 
-### Functionality 4 — Flood Mapping: **PARTIAL**
+### Functionality 4 — Flood Mapping: **COMPLETE for the F4 scope**
 
 The map's markers, risk colours, search/filter and detail cards genuinely read
-`GET /api/locations` from the database; all 12 coordinates were verified identical to
-the registry (`ml/synthetic/locations.csv`) and to the seeded backend rows. Gaps: the
-detail card's weather block and "Official public warning" text are prototype fixtures
-(not alert-driven), 4 of the 12 locations (Navua, Rakiraki, Levuka, Vunisea) have no
-prototype weather rows at all, there is no stale-data indicator or tile-failure
-handling, and the `LO-02` admin create/update location API does not exist.
+`GET /api/locations` from the database; all 12 coordinates were verified identical to the
+registry (`ml/synthetic/locations.csv`) and to the seeded backend rows. Weather now comes
+from `GET /api/weather/latest|observations` and the warning panel from the approved
+public alert feed, each labelled with its provenance. F4 closed the remaining gaps:
+division grouping/filtering, prediction-provenance (`model`/`sample`/`synthetic`) and
+stale-prediction (24 h) labels, tile-failure and alert-feed error states, and the
+`/api/admin/locations` create/update/deactivation API with inactive locations hidden from
+public reads and blocked from new weather/prediction/alert work. Deliberately deferred: a
+single joined risk feed (`P1-2`) — the map consumes the separate weather and alert
+endpoints. No genuine Fiji forecast is displayed; stored weather is synthetic research
+data and is labelled as such.
 
 ### Functionality 5 — Alert System and Testing: **PARTIAL**
 
@@ -189,16 +207,16 @@ exactly one revision (synthetic demo tables). Any weather table must be added th
 
 | ID | Requirement | Status | Evidence |
 |---|---|---|---|
-| LO-01 | One ordered migration workflow | **P** | `backend/migrations/` with one revision; but `init_db.py:10` still uses `create_all` for operational tables — the ticket's "not solely `create_all`" is only half met |
+| LO-01 | One ordered migration workflow | **P** | `backend/migrations/versions/` holds three ordered revisions (`20261019_synthetic_demo`, `20261020_weather`, `20261021_prediction_generation`); but `init_db.py:10` still uses `create_all` for operational tables — the ticket's "not solely `create_all`" is only half met |
 | LO-02 | Location list/detail APIs | **C** | `GET /api/locations` (division/search filters) + `GET /api/locations/{slug}` + `/divisions` (`routes/locations.py:28-67`); 39 tests in `test_locations.py` |
-| LO-02 | Admin create/update + deactivation API | **M** | No POST/PUT/PATCH location route exists anywhere; deactivation only via direct DB/seed |
+| LO-02 | Admin create/update + deactivation API | **C** | `admin_router` at `/api/admin/locations` POST 201 / PATCH `{id}` (`routes/locations.py:34-126`), validated by `LocationCreate`/`LocationUpdate` (`schemas/location.py:26-64`) and `create_location`/`update_location` (`location_service.py:75-108`); 22 tests in `test_admin_locations.py`; E2E verified 401 anon / 403 community / 409 duplicate slug / 422 blank name + bad coords / slug immutable / unknown id 404; deactivation hides the location from public reads and rejects weather writes (409) while preserving rows and prediction history |
 | LO-02 | Repeatable demo provisioning | **C** | `python -m app.db.seed_locations`, slug-keyed, idempotent (`seed_locations.py:101-159`, tests `:158-179,323,332`) |
 | LO-03 | Shared feed: locations + latest prediction, explicit no-data | **C** | `location_service.py` joins latest prediction; `null` prediction, never defaulted to LOW (`schemas/location.py:15-36`); live check: 12 locations, 8 with sample predictions correctly flagged |
-| LO-03 | Feed joins observations + approved alerts; stale flag | **M** | No observation model to join; alerts remain a separate endpoint; no staleness field |
+| LO-03 | Feed joins observations + approved alerts; stale flag | **P** | Observation storage + staleness now exist (`GET /api/weather/latest|observations`, `src/stale` flag) and the map reads weather and alerts live; the single joined risk endpoint (`P1-2`) is deliberately deferred — the map consumes the separate endpoints and public output still excludes non-approved/inactive alerts (`alert_service.py:308-320`) |
 | LO-04 | Map reads backend feed for markers/risk/details | **C** | `useMapLocations.ts:47` → `GET /api/locations`; marker positions from DB coords (`WeatherMap.tsx:131-149`); coordinates verified identical to `ml/synthetic/locations.csv` for all 12 |
-| LO-04 | Search/filter/selection/no-data UX | **C** | `WeatherMapPage.tsx:11-70,105-188`; "No prediction available" (`LocationDetailCard.tsx:34-44`); 9 page tests |
-| LO-04 | Weather + official warning from live sources | **M** | Detail card weather block and warning text come from `prototypeData.ts` fixtures joined by slug (`useMapLocations.ts:66-73`, `LocationDetailCard.tsx:108-162`); 4 of 12 locations have no prototype rows (weather section hidden, warning falls back to demo copy) |
-| LO-04 | Stale-data + tile-failure behaviour | **M** | No last-updated indicator; `TileLayer` has no error handling (`WeatherMap.tsx:126-129`) |
+| LO-04 | Search/filter/selection/no-data UX | **C** | `WeatherMapPage.tsx:25,57-90,215,303` adds division grouping + filter alongside search/risk filters; "No prediction available" (`LocationDetailCard.tsx:34-44`); 16 page tests |
+| LO-04 | Weather + official warning from live sources | **C** | Detail card weather from `GET /api/weather/latest` (`useLocationWeather.ts`) with a stale flag; the warning panel renders approved public alerts (`api/alerts.ts`) and labels each row's provenance (`PROVENANCE_PILLS`/`provenanceNote`, `LocationDetailCard.tsx:81-149`); `WeatherMapPage.tsx:142` shows an alert-feed error banner; fixture weather/official-warning copy is gone |
+| LO-04 | Stale-data + tile-failure behaviour | **C** | Prediction stale pill past `PREDICTION_STALE_AFTER_HOURS = 24` (`utils/date.ts:28-40`, `LocationDetailCard.tsx`), weather stale flag from the backend, and a tile-failure banner when tiles error and none load (`WeatherMap.tsx:95-124`); covered by `WeatherMap.test.tsx` and `LocationDetailCard.test.tsx` |
 
 ### Functionality 5 — Alert System and Testing (owner: Aryan)
 

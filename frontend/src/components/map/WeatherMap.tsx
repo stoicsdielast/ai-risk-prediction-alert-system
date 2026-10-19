@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { divIcon, latLngBounds } from 'leaflet'
 import {
   MapContainer,
@@ -35,7 +35,9 @@ interface MapViewportProps {
 function riskDescription({ prediction }: MapLocation) {
   if (!prediction) return 'No prediction available'
   const description = `${RISK_LABELS[prediction.riskLevel]} flood risk`
-  return prediction.isSample ? `${description} (sample)` : description
+  if (prediction.provenance === 'sample') return `${description} (sample)`
+  if (prediction.provenance === 'synthetic') return `${description} (synthetic research)`
+  return description
 }
 
 function markerIcon(riskLevel: RiskLevel | null, isSelected: boolean) {
@@ -86,6 +88,11 @@ export function WeatherMap({
 }: WeatherMapProps) {
   const selectedLocation =
     locations.find((location) => location.id === selectedLocationId) ?? null
+  // Offline/blocked tiles produce repeated tileerrors with no successful
+  // loads; a single transient error while the map still loads is not shown.
+  const [tileErrors, setTileErrors] = useState(0)
+  const [tilesLoaded, setTilesLoaded] = useState(0)
+  const tilesUnavailable = tileErrors >= 3 && tilesLoaded === 0
 
   const markerIcons = useMemo(
     () =>
@@ -103,7 +110,7 @@ export function WeatherMap({
       <div className="weather-map-empty" role="status">
         <span className="weather-map-empty__mark" aria-hidden="true">0</span>
         <h2>No monitored locations match</h2>
-        <p>Try a different location name or broaden the risk filter.</p>
+        <p>Try a different location name or broaden the risk and division filters.</p>
       </div>
     )
   }
@@ -114,6 +121,14 @@ export function WeatherMap({
       role="region"
       aria-label="Fiji monitored weather and flood-risk locations"
     >
+      {tilesUnavailable && (
+        <div className="weather-map-tile-notice" role="status">
+          <strong>Map background unavailable.</strong> Map tiles failed to
+          load, so the base map may appear blank. Location markers and the
+          data below remain available.
+        </div>
+      )}
+
       <MapContainer
         center={FIJI_CENTRE}
         zoom={7}
@@ -126,6 +141,10 @@ export function WeatherMap({
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          eventHandlers={{
+            tileerror: () => setTileErrors((count) => count + 1),
+            tileload: () => setTilesLoaded((count) => count + 1),
+          }}
         />
 
         {locations.map((location) => (

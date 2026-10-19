@@ -25,10 +25,19 @@ export interface ApiLocation {
   prediction: ApiPrediction | null
 }
 
+/**
+ * Where a displayed prediction came from:
+ * - `model`: a stored V1 model prediction (decision support, not a warning)
+ * - `sample`: seeded label for testing, never a model result
+ * - `synthetic`: simulator research replay output (research demonstration)
+ */
+export type PredictionProvenance = 'model' | 'sample' | 'synthetic'
+
 export interface MapPrediction {
   riskLevel: RiskLevel
   floodProbabilityPercent: number
-  isSample: boolean
+  provenance: PredictionProvenance
+  modelVersion: string
   predictedAt: string
 }
 

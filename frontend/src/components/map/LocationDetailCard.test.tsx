@@ -22,8 +22,10 @@ const nadi: MapLocation = {
   prediction: {
     riskLevel: 'VERY_HIGH',
     floodProbabilityPercent: 91,
-    isSample: true,
-    predictedAt: '2026-10-13T00:00:00Z',
+    provenance: 'sample',
+    modelVersion: 'sample-demo-not-a-model-result',
+    // Fresh relative to the real clock so staleness tests stay deterministic.
+    predictedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
   },
 }
 
@@ -199,5 +201,60 @@ describe('LocationDetailCard', () => {
       screen.getByText('No approved community alert is active for this location.'),
     ).toBeInTheDocument()
     expect(screen.queryByText('Official public warning')).not.toBeInTheDocument()
+  })
+
+  it('marks a prediction older than 24 hours as stale', () => {
+    const stalePrediction: MapLocation = {
+      ...nadi,
+      prediction: {
+        ...nadi.prediction!,
+        predictedAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+      },
+    }
+
+    render(<LocationDetailCard location={stalePrediction} />)
+
+    expect(screen.getByText('Stale')).toBeInTheDocument()
+    expect(screen.getByText(/more than 24 hours old/)).toBeInTheDocument()
+  })
+
+  it('shows the model version for a stored model prediction', () => {
+    const modelPrediction: MapLocation = {
+      ...nadi,
+      prediction: {
+        ...nadi.prediction!,
+        provenance: 'model',
+        modelVersion: 'synthetic-fiji-v1-catboost__none',
+      },
+    }
+
+    render(<LocationDetailCard location={modelPrediction} />)
+
+    expect(screen.getByText('AI prediction')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /Model synthetic-fiji-v1-catboost__none · decision-support estimate/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Sample risk')).not.toBeInTheDocument()
+  })
+
+  it('labels synthetic research predictions distinctly from samples', () => {
+    const syntheticPrediction: MapLocation = {
+      ...nadi,
+      prediction: {
+        ...nadi.prediction!,
+        provenance: 'synthetic',
+        modelVersion: 'synthetic-fiji-v1-catboost__none',
+      },
+    }
+
+    render(<LocationDetailCard location={syntheticPrediction} />)
+
+    expect(screen.getByText('Synthetic research')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Synthetic research simulation/),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Sample risk')).not.toBeInTheDocument()
   })
 })

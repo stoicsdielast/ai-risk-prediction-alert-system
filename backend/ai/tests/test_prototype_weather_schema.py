@@ -1,7 +1,7 @@
 """Verify the trained/inference contract matches the actual demo inputs."""
 
+import json
 from pathlib import Path
-import re
 
 import numpy as np
 import pandas as pd
@@ -23,17 +23,22 @@ def prototype_location():
     }
 
 
-def test_exact_input_contract_matches_frontend_numeric_weather_fields():
+def test_exact_input_contract_matches_demo_input_artifact():
     assert INPUT_COLUMNS == [
         "latitude", "longitude", "rainfall24hMm", "temperatureC",
         "humidityPercent", "windKph",
     ]
-    source = (Path(__file__).resolve().parents[3] / "frontend/src/types/prototype.ts").read_text()
-    declaration = re.search(r"export interface WeatherLocation \{(.*?)\n\}", source, re.DOTALL)
-    assert declaration is not None
-    # Exactly two spaces selects top-level properties, excluding prediction outputs.
-    numeric_properties = re.findall(r"^  (\w+): number$", declaration.group(1), re.MULTILINE)
-    assert set(numeric_properties) == set(INPUT_COLUMNS)
+    # The frontend WeatherLocation interface was removed when the prototype
+    # dataset was replaced by live backend feeds; the predictor's flat
+    # demo input shape now lives in the artifact JSON.
+    artifact = Path(__file__).resolve().parents[1] / "artifacts/prototype_weather/example_location.json"
+    example = json.loads(artifact.read_text())
+    numeric_measurements = {
+        key
+        for key, value in example.items()
+        if isinstance(value, (int, float)) and not isinstance(value, bool)
+    }
+    assert numeric_measurements == set(INPUT_COLUMNS)
 
 
 def test_inputs_are_float_and_output_changes_cannot_affect_features(prototype_location):

@@ -362,6 +362,26 @@
   border-style: dashed;
 }
 
+.data-pill--stale {
+  color: #9a6111;
+  border-color: #ecd7ac;
+  background: #fdf6e7;
+}
+
+.data-pill--synthetic_data,
+.data-pill--synthetic_prediction {
+  color: #7a5b12;
+  border-color: #e8d9a8;
+  background: #fbf5e2;
+  border-style: dashed;
+}
+
+.data-pill--no_alerts {
+  color: #626b7a;
+  border-color: #d8dce3;
+  background: #f1f3f6;
+}
+
 .data-pill--official_warning {
   color: #98354f;
   border-color: #ecc1cd;
@@ -680,7 +700,7 @@
 
 .map-toolbar {
   display: grid;
-  grid-template-columns: minmax(15rem, 0.75fr) minmax(22rem, 1.25fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
   gap: 1rem;
   align-items: end;
   padding: 1rem;
@@ -945,6 +965,17 @@
   backdrop-filter: blur(10px);
 }
 
+.weather-map-tile-notice {
+  margin-bottom: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #ecd7ac;
+  border-radius: 0.75rem;
+  background: #fdf6e7;
+  color: #6f5213;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
 .weather-map-legend__label {
   display: block;
   margin-bottom: 0.42rem;
@@ -1017,6 +1048,16 @@
   padding: 0.75rem;
   border-top: 1px solid #eceef3;
   background: #fafbfc;
+}
+
+.map-location-group {
+  grid-column: 1 / -1;
+  margin: 0.35rem 0 0;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #737b8d;
 }
 
 .map-location-button {

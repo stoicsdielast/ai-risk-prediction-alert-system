@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { usePublicAlerts } from '../alerts/useAlertFeed'
+import { Alert } from '../components/Alert'
 import { LocationDetailCard } from '../components/map/LocationDetailCard'
 import { WeatherMap } from '../components/map/WeatherMap'
 import { RiskPill } from '../components/pills/DataPill'
 import { PageHeader } from '../components/layout/PageHeader'
 import { useMapLocations } from '../locations/useMapLocations'
-import type { MapLocation } from '../types/location'
+import type { DivisionCode, MapLocation } from '../types/location'
 import type { RiskLevel } from '../types/prototype'
 import { SyntheticReplayPanel } from '../components/research/SyntheticReplayPanel'
 
 type RiskFilter = 'ALL' | RiskLevel | 'NONE'
+type DivisionFilter = 'ALL' | DivisionCode
 
 const RISK_FILTERS: Array<{ value: RiskFilter; label: string }> = [
   { value: 'ALL', label: 'All risks' },
@@ -20,10 +22,25 @@ const RISK_FILTERS: Array<{ value: RiskFilter; label: string }> = [
   { value: 'NONE', label: 'No prediction' },
 ]
 
+const DIVISION_ORDER: DivisionCode[] = ['CENTRAL', 'WESTERN', 'NORTHERN', 'EASTERN']
+
+function divisionShortLabel(code: DivisionCode): string {
+  return code.charAt(0) + code.slice(1).toLowerCase()
+}
+
+function divisionFullLabel(code: DivisionCode): string {
+  return `${divisionShortLabel(code)} Division`
+}
+
 function matchesRiskFilter(location: MapLocation, filter: RiskFilter) {
   if (filter === 'ALL') return true
   if (filter === 'NONE') return location.riskLevel === null
   return location.riskLevel === filter
+}
+
+function matchesDivisionFilter(location: MapLocation, filter: DivisionFilter) {
+  if (filter === 'ALL') return true
+  return location.division === divisionFullLabel(filter)
 }
 
 export function WeatherMapPage() {
@@ -31,10 +48,19 @@ export function WeatherMapPage() {
   const publicFeed = usePublicAlerts()
   const [searchQuery, setSearchQuery] = useState('')
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('ALL')
+  const [divisionFilter, setDivisionFilter] = useState<DivisionFilter>('ALL')
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
 
   const isReady = status === 'ready'
   const hasNoLocations = isReady && locations.length === 0
+
+  const divisionOptions = useMemo(
+    () =>
+      DIVISION_ORDER.filter((code) =>
+        locations.some((location) => matchesDivisionFilter(location, code)),
+      ),
+    [locations],
+  )
 
   const filteredLocations = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -45,9 +71,26 @@ export function WeatherMapPage() {
         location.name.toLowerCase().includes(normalizedQuery) ||
         location.division.toLowerCase().includes(normalizedQuery)
 
-      return matchesSearch && matchesRiskFilter(location, riskFilter)
+      return (
+        matchesSearch &&
+        matchesRiskFilter(location, riskFilter) &&
+        matchesDivisionFilter(location, divisionFilter)
+      )
     })
-  }, [locations, riskFilter, searchQuery])
+  }, [locations, riskFilter, divisionFilter, searchQuery])
+
+  const locationGroups = useMemo(() => {
+    const byDivision = new Map<string, MapLocation[]>()
+    for (const location of filteredLocations) {
+      const bucket = byDivision.get(location.division) ?? []
+      bucket.push(location)
+      byDivision.set(location.division, bucket)
+    }
+
+    return DIVISION_ORDER.map(divisionFullLabel)
+      .filter((label) => byDivision.has(label))
+      .map((label) => ({ label, locations: byDivision.get(label) ?? [] }))
+  }, [filteredLocations])
 
   useEffect(() => {
     if (filteredLocations.length === 0) {
@@ -70,7 +113,8 @@ export function WeatherMapPage() {
 
   const selectedLocation =
     filteredLocations.find((location) => location.id === selectedLocationId) ?? null
-  const filtersAreActive = searchQuery.trim() !== '' || riskFilter !== 'ALL'
+  const filtersAreActive =
+    searchQuery.trim() !== '' || riskFilter !== 'ALL' || divisionFilter !== 'ALL'
 
   const locationAlerts = useMemo(() => {
     if (!selectedLocation || !publicFeed.data) return []
@@ -82,6 +126,7 @@ export function WeatherMapPage() {
   const clearFilters = () => {
     setSearchQuery('')
     setRiskFilter('ALL')
+    setDivisionFilter('ALL')
   }
 
   return (
@@ -93,6 +138,12 @@ export function WeatherMapPage() {
       />
 
       <SyntheticReplayPanel />
+
+      {publicFeed.error && (
+        <Alert tone="error">
+          Approved alerts shown here may be out of date. {publicFeed.error}
+        </Alert>
+      )}
 
       <section className="map-toolbar" aria-label="Map search and filters">
         <label className="map-search" htmlFor="location-search">
@@ -135,6 +186,49 @@ export function WeatherMapPage() {
                   onClick={() => setRiskFilter(filter.value)}
                 >
                   {filter.label}
+                  <span>{isReady ? count : '–'}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="risk-filter">
+          <span id="division-filter-label">Filter by division</span>
+          <div
+            className="risk-filter__options"
+            role="group"
+            aria-labelledby="division-filter-label"
+          >
+            <button
+              type="button"
+              className={`risk-filter__button${
+                divisionFilter === 'ALL' ? ' is-active' : ''
+              }`}
+              aria-pressed={divisionFilter === 'ALL'}
+              disabled={!isReady}
+              onClick={() => setDivisionFilter('ALL')}
+            >
+              All divisions
+              <span>{isReady ? locations.length : '–'}</span>
+            </button>
+            {divisionOptions.map((code) => {
+              const count = locations.filter((location) =>
+                matchesDivisionFilter(location, code),
+              ).length
+
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  className={`risk-filter__button${
+                    divisionFilter === code ? ' is-active' : ''
+                  }`}
+                  aria-pressed={divisionFilter === code}
+                  disabled={!isReady}
+                  onClick={() => setDivisionFilter(code)}
+                >
+                  {divisionShortLabel(code)}
                   <span>{isReady ? count : '–'}</span>
                 </button>
               )
@@ -206,22 +300,27 @@ export function WeatherMapPage() {
 
           {filteredLocations.length > 0 && (
             <div className="map-location-list" aria-label="Visible monitored locations">
-              {filteredLocations.map((location) => (
-                <button
-                  key={location.id}
-                  type="button"
-                  className={`map-location-button${
-                    location.id === selectedLocationId ? ' is-selected' : ''
-                  }`}
-                  aria-pressed={location.id === selectedLocationId}
-                  onClick={() => setSelectedLocationId(location.id)}
-                >
-                  <span className="map-location-button__copy">
-                    <strong>{location.name}</strong>
-                    <small>{location.division}</small>
-                  </span>
-                  <RiskPill risk={location.riskLevel} compact />
-                </button>
+              {locationGroups.map((group) => (
+                <Fragment key={group.label}>
+                  <h3 className="map-location-group">{group.label}</h3>
+                  {group.locations.map((location) => (
+                    <button
+                      key={location.id}
+                      type="button"
+                      className={`map-location-button${
+                        location.id === selectedLocationId ? ' is-selected' : ''
+                      }`}
+                      aria-pressed={location.id === selectedLocationId}
+                      onClick={() => setSelectedLocationId(location.id)}
+                    >
+                      <span className="map-location-button__copy">
+                        <strong>{location.name}</strong>
+                        <small>{location.division}</small>
+                      </span>
+                      <RiskPill risk={location.riskLevel} compact />
+                    </button>
+                  ))}
+                </Fragment>
               ))}
             </div>
           )}
