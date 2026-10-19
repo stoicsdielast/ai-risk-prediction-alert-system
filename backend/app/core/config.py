@@ -10,6 +10,10 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    research_model_dir: Path = Field(
+        default=BACKEND_DIR.parent / "ml" / "artifacts", validation_alias="RESEARCH_MODEL_DIR",
+    )
+    alert_demo_enabled: bool = Field(default=False, validation_alias="ALERT_DEMO_ENABLED")
     database_url: str = Field(validation_alias="DATABASE_URL")
     jwt_secret_key: SecretStr = Field(
         min_length=32,

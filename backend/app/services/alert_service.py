@@ -5,13 +5,15 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from functools import wraps
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
+
 from app.models.alert import Alert, AlertSource, AlertStatus
 from app.models.location import Location
-from app.models.prediction import Prediction
+from app.models.prediction import ALERT_DEMO_MODEL_PREFIX, Prediction
 from app.models.risk import RiskLevel
 from app.models.user import User
 from app.schemas.alert import AlertSuppressionRequest, AlertUpdate, ManualAlertCreate
@@ -101,7 +103,7 @@ def _prediction(db: Session, prediction_id: int) -> Prediction:
 
 
 def _require_real_prediction(prediction: Prediction) -> None:
-    if prediction.is_sample:
+    if prediction.is_sample and not (get_settings().alert_demo_enabled and prediction.is_alert_demo):
         raise InvalidAlertDataError("Sample predictions cannot be used for alerts")
 
 
@@ -158,6 +160,7 @@ def create_alert_from_prediction(db: Session, prediction: Prediction) -> Alert |
         severity=stored.risk_level, status=AlertStatus.PENDING,
         source=AlertSource.AI_RECOMMENDATION,
         message=(
+            ("DEMO ONLY — simulated prediction; not an official Fiji MET warning. " if stored.is_alert_demo else "") +
             f"AI-generated flood-risk recommendation for {location.name}: "
             f"{stored.risk_level.value.replace('_', ' ').lower()} risk. "
             "This recommendation is for Fiji MET review."
@@ -294,9 +297,15 @@ def suppress_alert(
 
 @_database_operation
 def get_public_alerts(db: Session, *, offset: int = 0, limit: int = 100) -> list[Alert]:
+    allowed_prediction = ~Alert.prediction.has(Prediction.is_sample.is_(True))
+    if get_settings().alert_demo_enabled:
+        allowed_prediction = or_(allowed_prediction, Alert.prediction.has(and_(
+            Prediction.is_sample.is_(True),
+            Prediction.model_version.startswith(ALERT_DEMO_MODEL_PREFIX),
+        )))
     return list(db.scalars(
         select(Alert).join(Location, Alert.location_id == Location.id)
         .where(Alert.status == AlertStatus.APPROVED, Location.is_active.is_(True))
-        .where(~Alert.prediction.has(Prediction.is_sample.is_(True)))
+        .where(allowed_prediction)
         .order_by(Alert.approved_at.desc(), Alert.id.desc()).offset(offset).limit(limit)
     ))

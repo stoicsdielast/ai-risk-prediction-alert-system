@@ -1,0 +1,5 @@
+area_id,name,usgs_id,noaa_id,flood_stage_ft,threshold_source,river_system
+marengo,Iowa River at Marengo,05453100,MROI4,15.0,https://www.weather.gov/dvn/FloodStagesChangedAlongIowaRiver,iowa
+iowa-city,Iowa River at Iowa City,05454500,IOWI4,23.5,https://www.weather.gov/dvn/FloodStagesChangedAlongIowaRiver,iowa
+wapello,Iowa River at Wapello,05465500,WAPI4,21.0,https://www.weather.gov/dvn/FloodStagesChangedAlongIowaRiver,iowa
+little-falls,Passaic River at Little Falls NJ,01389500,LTFN4,7.0,https://www.weather.gov/media/marfc/FloodClimo/PSC/LittleFallsNJ.pdf,passaic

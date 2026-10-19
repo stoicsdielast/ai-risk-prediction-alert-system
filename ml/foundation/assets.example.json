@@ -1,0 +1,5 @@
+{
+  "tabfm": {"path": "", "sha256": "", "python": "ml/envs/tabfm/bin/python"},
+  "tabpfn": {"path": "", "sha256": "", "python": "ml/envs/tabpfn/bin/python"},
+  "tabicl": {"path": "", "sha256": "", "python": "ml/envs/tabicl/bin/python"}
+}

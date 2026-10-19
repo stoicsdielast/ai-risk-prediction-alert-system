@@ -1,0 +1,108 @@
+{
+  "dataset": "USGS approved 15-minute gauge observations with NOAA flood thresholds",
+  "target": "At least one observed stage >= NOAA minor-flood stage during next UTC 24 hours",
+  "geography": "Iowa River and Passaic River gauges, United States; not Fiji",
+  "start": "2020-01-01",
+  "end": "2025-12-31",
+  "rows": 7187,
+  "positive_rows": 100,
+  "negative_rows": 7087,
+  "dataset_sha256": "e90bed8a8078997d9d3b3c26c6d71dad711d0820714c113e1b27c2df35426c71",
+  "coverage": [
+    {
+      "area_id": "marengo",
+      "calendar_days": 2192,
+      "complete_observed_days": 1761,
+      "usable_rows_with_history": 1237,
+      "positive_rows": 45
+    },
+    {
+      "area_id": "iowa-city",
+      "calendar_days": 2192,
+      "complete_observed_days": 2148,
+      "usable_rows_with_history": 1957,
+      "positive_rows": 0
+    },
+    {
+      "area_id": "wapello",
+      "calendar_days": 2192,
+      "complete_observed_days": 2132,
+      "usable_rows_with_history": 1873,
+      "positive_rows": 25
+    },
+    {
+      "area_id": "little-falls",
+      "calendar_days": 2192,
+      "complete_observed_days": 2183,
+      "usable_rows_with_history": 2120,
+      "positive_rows": 30
+    }
+  ],
+  "quality": "All 96 quarter-hour slots approved and non-estimated; gaps exclude the entire target day and affected lag windows",
+  "input_cutoff": "Latest measurement is 24 hours 15 minutes before issue; revised archival data are not a real-time availability audit",
+  "threshold_policy": "Fixed NOAA thresholds from the documented Iowa 2019 change and Passaic historical flood summary, cross-checked against retrieved gauge metadata",
+  "limitations": [
+    "Station-specific river flood-stage exceedance, not town-wide inundation or flash-flood ground truth.",
+    "Peaks between quarter-hour samples may be missed.",
+    "Approved records can include retrospective revisions.",
+    "Some gauges share a river and are correlated; geographical transfer is not demonstrated."
+  ],
+  "sources": [
+    {
+      "file": "raw/noaa-mroi4.json",
+      "sha256": "6191739308c589c244def94b50fd37e2a36609886632a0871086acbfc0313804",
+      "url": "https://api.water.noaa.gov/nwps/v1/gauges/mroi4"
+    },
+    {
+      "file": "raw/noaa-iowi4.json",
+      "sha256": "5eac7ed12998edd0af868d2db1951c67c7a5d3a5a703a6b4ad800366fc97e6f3",
+      "url": "https://api.water.noaa.gov/nwps/v1/gauges/iowi4"
+    },
+    {
+      "file": "raw/noaa-wapi4.json",
+      "sha256": "2e56472264429f9d8fddc67b8f0e5ef62fe4b4c5ca937e8cd1178c31276d1e9f",
+      "url": "https://api.water.noaa.gov/nwps/v1/gauges/wapi4"
+    },
+    {
+      "file": "raw/noaa-ltfn4.json",
+      "sha256": "daa4e224998b16bb6cdfa36826338e88f9cbf63ce6ed6ea4bb197d3cccc4f1de",
+      "url": "https://api.water.noaa.gov/nwps/v1/gauges/ltfn4"
+    },
+    {
+      "file": "raw/usgs-05453100-05454500-05465500-01389500-2020-01-01-2021-01-01.json.gz",
+      "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=05453100%2C05454500%2C05465500%2C01389500&parameterCd=00065&startDT=2020-01-01T00%3A00Z&endDT=2021-01-01T00%3A00Z&siteStatus=all",
+      "sha256": "e31a71805c6f14f5b2f283dfc55cad8c44c1218fcfbaaa11840dbd0e1e282717",
+      "retrieved_at": "2026-10-14T02:19:22.719616+00:00"
+    },
+    {
+      "file": "raw/usgs-05453100-05454500-05465500-01389500-2021-01-01-2022-01-01.json.gz",
+      "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=05453100%2C05454500%2C05465500%2C01389500&parameterCd=00065&startDT=2021-01-01T00%3A00Z&endDT=2022-01-01T00%3A00Z&siteStatus=all",
+      "sha256": "14b228e92401feb560449f9d469ee80b601c0032737b613b0740217e45df4ebc",
+      "retrieved_at": "2026-10-14T02:19:31.369552+00:00"
+    },
+    {
+      "file": "raw/usgs-05453100-05454500-05465500-01389500-2022-01-01-2023-01-01.json.gz",
+      "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=05453100%2C05454500%2C05465500%2C01389500&parameterCd=00065&startDT=2022-01-01T00%3A00Z&endDT=2023-01-01T00%3A00Z&siteStatus=all",
+      "sha256": "e14ce316c5b5893f32964bf60778e4a83ee6ed7159333b8f29b2d8838b94fa0a",
+      "retrieved_at": "2026-10-14T02:19:40.338899+00:00"
+    },
+    {
+      "file": "raw/usgs-05453100-05454500-05465500-01389500-2023-01-01-2024-01-01.json.gz",
+      "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=05453100%2C05454500%2C05465500%2C01389500&parameterCd=00065&startDT=2023-01-01T00%3A00Z&endDT=2024-01-01T00%3A00Z&siteStatus=all",
+      "sha256": "89ca385b640edf5233c5d0d0f3f232df522ee2a044c4ccc3b2a6244b8f33032c",
+      "retrieved_at": "2026-10-14T02:19:49.906482+00:00"
+    },
+    {
+      "file": "raw/usgs-05453100-05454500-05465500-01389500-2024-01-01-2025-01-01.json.gz",
+      "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=05453100%2C05454500%2C05465500%2C01389500&parameterCd=00065&startDT=2024-01-01T00%3A00Z&endDT=2025-01-01T00%3A00Z&siteStatus=all",
+      "sha256": "c3552af2c4505adebaf12ff0e3224c1781f651a8bdcd90c2b6ec4a9c087c7ed1",
+      "retrieved_at": "2026-10-14T02:20:00.896126+00:00"
+    },
+    {
+      "file": "raw/usgs-05453100-05454500-05465500-01389500-2025-01-01-2026-01-01.json.gz",
+      "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=05453100%2C05454500%2C05465500%2C01389500&parameterCd=00065&startDT=2025-01-01T00%3A00Z&endDT=2026-01-01T00%3A00Z&siteStatus=all",
+      "sha256": "dc915a86efb6ad12c3e0f1ebe8cbbddf11652586ccf3a10360f236b37fc4ce3a",
+      "retrieved_at": "2026-10-14T02:20:10.359929+00:00"
+    }
+  ]
+}

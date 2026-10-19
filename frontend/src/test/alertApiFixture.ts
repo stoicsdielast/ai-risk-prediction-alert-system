@@ -21,7 +21,7 @@ export function sampleAlert(overrides: Partial<AdminAlert> = {}): AdminAlert {
     source: 'MET_OFFICIAL',
     message: 'TEST ONLY: Move to higher ground.',
     created_at: '2026-10-14T00:00:00Z',
-    approved_at: null,
+    approved_at: overrides.status === 'APPROVED' ? '2026-10-14T01:00:00Z' : null,
     updated_at: null,
     rejected_at: null,
     suppressed_at: null,

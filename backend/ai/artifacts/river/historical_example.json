@@ -1,0 +1,37 @@
+{
+  "model_version": "us-river-next24h-poc-20261014T022059Z",
+  "historical_demo": true,
+  "fiji_validated": false,
+  "forecast_date": "2025-07-20",
+  "areas_without_complete_data": [
+    "wapello"
+  ],
+  "target": "Maximum observed river stage reaches NOAA minor flood stage in the next UTC 24 hours",
+  "decision_threshold": 0.05,
+  "predictions": [
+    {
+      "area_id": "iowa-city",
+      "issued_at": "2025-07-20T00:00:00+00:00",
+      "window_end": "2025-07-21T00:00:00+00:00",
+      "flood_stage_probability": 0.0,
+      "predicted_flood_stage": false,
+      "observed_flood_stage": 0
+    },
+    {
+      "area_id": "little-falls",
+      "issued_at": "2025-07-20T00:00:00+00:00",
+      "window_end": "2025-07-21T00:00:00+00:00",
+      "flood_stage_probability": 0.0,
+      "predicted_flood_stage": false,
+      "observed_flood_stage": 0
+    },
+    {
+      "area_id": "marengo",
+      "issued_at": "2025-07-20T00:00:00+00:00",
+      "window_end": "2025-07-21T00:00:00+00:00",
+      "flood_stage_probability": 0.45062978520321695,
+      "predicted_flood_stage": true,
+      "observed_flood_stage": 1
+    }
+  ]
+}

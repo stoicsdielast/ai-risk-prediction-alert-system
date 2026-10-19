@@ -6,6 +6,7 @@ import { PageHeader } from '../components/layout/PageHeader'
 import { useMapLocations } from '../locations/useMapLocations'
 import type { MapLocation } from '../types/location'
 import type { RiskLevel } from '../types/prototype'
+import { ResearchReplayPanel } from '../components/research/ResearchReplayPanel'
 
 type RiskFilter = 'ALL' | RiskLevel | 'NONE'
 
@@ -81,6 +82,8 @@ export function WeatherMapPage() {
         title="Weather & flood-risk map"
         description="Explore monitored Fiji locations with labelled sample flood risks and prototype weather observations."
       />
+
+      <ResearchReplayPanel />
 
       <section className="map-toolbar" aria-label="Map search and filters">
         <label className="map-search" htmlFor="location-search">

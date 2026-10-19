@@ -207,7 +207,9 @@ describe('persisted alert management', () => {
     const { fetchMock } = installAlertApi()
     renderApp()
     await screen.findByRole('button', { name: /Sign in/i })
-    expect(fetchMock).not.toHaveBeenCalled()
+    // The shared public feed may start before the route guard redirects.
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/admin/'))).toBe(false)
+    expect(fetchMock.mock.calls.every(([, options]) => !new Headers(options?.headers).has('Authorization'))).toBe(true)
   })
 
   it('uses API counts on the admin dashboard, including only public active alerts', async () => {

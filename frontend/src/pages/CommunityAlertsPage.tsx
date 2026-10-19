@@ -11,7 +11,7 @@ export function CommunityAlertsPage() {
       <PageHeader
         eyebrow="Community information"
         title="Community alerts"
-        description="Flood alerts approved by Fiji MET. Follow the instructions in each alert."
+        description="Administrator-approved alerts from the university prototype. AI predictions support review; they are not official Fiji MET warnings."
       />
       <AlertFeedStatus {...feed} />
       {feed.data?.length === 0 && (
@@ -22,11 +22,12 @@ export function CommunityAlertsPage() {
       )}
       <div className="community-alert-list">
         {feed.data?.map((alert) => (
-          <article className="prototype-panel community-alert-card" key={alert.id}>
+          <article className={`prototype-panel community-alert-card community-alert-card--${alert.severity.toLowerCase()}`} key={alert.id} id={`alert-${alert.id}`}>
             <header>
               <h2>{alert.location.name}</h2>
               <RiskPill risk={alert.severity} />
             </header>
+            {alert.is_demo && <p className="alert-demo-label">DEMO ONLY — simulated prediction, not a real flood warning.</p>}
             <p className="community-alert-message">{alert.message}</p>
             <dl className="alert-detail-grid">
               <div>

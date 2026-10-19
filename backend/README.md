@@ -6,8 +6,10 @@ authorization, and MET admin account review for the Fiji Flood Risk Prediction
 and Community Alert System.
 
 A companion React interface consumes these endpoints and includes clearly
-labelled local weather/map/alert prototype views. Real backend AI, weather,
-location, operational-alert, and reporting services are not implemented yet.
+labelled local weather/map/alert prototype views. The alert backend now supports
+persisted drafts, administrator review, suppression, and public approved alerts;
+see the [Alert System guide](../docs/ALERT_SYSTEM.md). Prediction ingestion,
+weather/location management, reporting, and frontend alert integration remain pending.
 See the [frontend prototype guide](../docs/PROTOTYPE_UI.md) for that boundary.
 
 ## What is implemented
@@ -34,6 +36,7 @@ See the [frontend prototype guide](../docs/PROTOTYPE_UI.md) for that boundary.
 - Reusable approved-MET-admin authorization
 - Controlled pending-account approval and rejection transitions
 - Tests for registration, login, JWT, authorization, and account review
+- Persistent alert lifecycle and APIs documented in the [Alert System guide](../docs/ALERT_SYSTEM.md)
 
 ## Prerequisites
 
@@ -160,7 +163,8 @@ This creates the following objects if they do not already exist:
 - `user_role` PostgreSQL enum
 - `account_status` PostgreSQL enum
 - unique index/constraint for `users.email`
-- `locations` table, `division` PostgreSQL enum, and coordinate range checks
+- `locations`, `predictions`, and `alerts` tables and alert/risk enums
+- `division` PostgreSQL enum and location coordinate range checks
 
 The initializer uses SQLAlchemy `create_all`, which creates missing objects but
 does not migrate an existing table when the model changes. Future schema
@@ -721,8 +725,16 @@ This milestone intentionally does not provide:
 - Refresh tokens or token revocation storage
 - Password reset or email verification
 - Account approval audit fields such as `approved_by` or `approved_at`
-- AI, weather, mapping, alert, or reporting functionality
+- Prediction ingestion, weather, mapping, reporting, or notification delivery
 
 The React authentication interface uses this backend as its security boundary.
 If future changes add audit columns or other schema fields, introduce Alembic
 before modifying deployed databases.
+
+# Bangladesh historical research API
+
+The separate [research runbook](../docs/RESEARCH_BANGLADESH.md) describes the
+authenticated `/api/predictions/flood-risk` endpoint, public model-info and replay
+reads, model setup and the additional `research_predictions` table. These are
+historical Bangladesh proxy-label results, not validated Fiji forecasts. Run
+`python -m app.db.init_db` after updating to create the research table.

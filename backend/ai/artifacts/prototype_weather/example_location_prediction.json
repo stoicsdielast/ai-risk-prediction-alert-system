@@ -1,0 +1,27 @@
+{
+  "model_version": "prototype-weather-next24h-poc-20261014T023525Z",
+  "input_columns": [
+    "latitude",
+    "longitude",
+    "rainfall24hMm",
+    "temperatureC",
+    "humidityPercent",
+    "windKph"
+  ],
+  "target": "Maximum observed quarter-hour river stage reaches NOAA minor flood stage in the next UTC 24 hours",
+  "decision_threshold": 0.00026690495154719357,
+  "prototype_input_compatible": true,
+  "development_only": true,
+  "evaluation_kind": "RETROSPECTIVE_REANALYSIS_POC",
+  "fiji_validated": false,
+  "operational_forecast_validated": false,
+  "calibrated": false,
+  "predictions": [
+    {
+      "flood_stage_probability": 9.757924670284887e-05,
+      "predicted_flood_stage": false,
+      "outside_training_ranges": []
+    }
+  ],
+  "historical_demo": false
+}

@@ -1,0 +1,359 @@
+{
+  "model_version": "us-river-next24h-poc-20261014T022059Z",
+  "trained_at": "2026-10-14T02:20:59.492351+00:00",
+  "geography": "Iowa River at Marengo, Iowa City and Wapello; Passaic River at Little Falls NJ, United States",
+  "target": "Maximum observed river stage reaches NOAA minor flood stage in the next UTC 24 hours",
+  "dataset_sha256": "e90bed8a8078997d9d3b3c26c6d71dad711d0820714c113e1b27c2df35426c71",
+  "dataset_rows": 7187,
+  "software": {
+    "python": "3.14.7",
+    "sklearn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.3"
+  },
+  "input_columns": [
+    "margin_lag2_ft",
+    "margin_lag3_ft",
+    "margin_lag4_ft",
+    "margin_lag7_ft",
+    "mean_margin_lag2_ft",
+    "range_lag2_ft",
+    "rise_1d_ft",
+    "rise_2d_ft",
+    "week_max_margin_ft",
+    "week_mean_margin_ft",
+    "season_sin",
+    "season_cos",
+    "flood_stage_ft",
+    "area_id"
+  ],
+  "target_column": "observed_flood_stage",
+  "input_cutoff_hours_before_issue": 24.25,
+  "selected_model": "random_forest",
+  "decision_threshold": 0.05,
+  "selection": "Validation average precision, ROC-AUC, then lower Brier score; threshold maximizes validation F2. No refit or model selection on final test.",
+  "split": {
+    "validation_start": "2022-01-01",
+    "test_start": "2024-01-01",
+    "gap_days": 30
+  },
+  "split_support": {
+    "train": {
+      "rows": 2138,
+      "flood_stage_days": 15,
+      "below_stage_days": 2123,
+      "flood_episodes": 2,
+      "first_date": "2020-01-10",
+      "last_date": "2021-12-01"
+    },
+    "validation": {
+      "rows": 2396,
+      "flood_stage_days": 6,
+      "below_stage_days": 2390,
+      "flood_episodes": 2,
+      "first_date": "2022-01-02",
+      "last_date": "2023-12-01"
+    },
+    "test": {
+      "rows": 2426,
+      "flood_stage_days": 69,
+      "below_stage_days": 2357,
+      "flood_episodes": 6,
+      "first_date": "2024-01-02",
+      "last_date": "2025-12-31"
+    }
+  },
+  "validation_models": {
+    "logistic_regression": {
+      "rows": 2396,
+      "flood_days": 6,
+      "flood_prevalence": 0.0025041736227045075,
+      "accuracy": 0.991652754590985,
+      "precision": 0.0625,
+      "recall": 0.16666666666666666,
+      "f1": 0.09090909090909091,
+      "f2": 0.125,
+      "roc_auc": 0.9691073919107392,
+      "average_precision": 0.0825931103956015,
+      "brier_score": 0.006616665070903101,
+      "confusion_matrix": [
+        [
+          2375,
+          15
+        ],
+        [
+          5,
+          1
+        ]
+      ]
+    },
+    "random_forest": {
+      "rows": 2396,
+      "flood_days": 6,
+      "flood_prevalence": 0.0025041736227045075,
+      "accuracy": 0.9974958263772955,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "f2": 0.0,
+      "roc_auc": 0.9899232914923292,
+      "average_precision": 0.2742165242165242,
+      "brier_score": 0.0021571177432671146,
+      "confusion_matrix": [
+        [
+          2390,
+          0
+        ],
+        [
+          6,
+          0
+        ]
+      ]
+    },
+    "gradient_boosting": {
+      "rows": 2396,
+      "flood_days": 6,
+      "flood_prevalence": 0.0025041736227045075,
+      "accuracy": 0.9974958263772955,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "f2": 0.0,
+      "roc_auc": 0.9733612273361226,
+      "average_precision": 0.12232085171233245,
+      "brier_score": 0.0024932512772869097,
+      "confusion_matrix": [
+        [
+          2390,
+          0
+        ],
+        [
+          6,
+          0
+        ]
+      ]
+    }
+  },
+  "validation_selected_threshold": {
+    "rows": 2396,
+    "flood_days": 6,
+    "flood_prevalence": 0.0025041736227045075,
+    "accuracy": 0.9887312186978298,
+    "precision": 0.13793103448275862,
+    "recall": 0.6666666666666666,
+    "f1": 0.22857142857142856,
+    "f2": 0.37735849056603776,
+    "roc_auc": 0.9899232914923292,
+    "average_precision": 0.2742165242165242,
+    "brier_score": 0.0021571177432671146,
+    "confusion_matrix": [
+      [
+        2365,
+        25
+      ],
+      [
+        2,
+        4
+      ]
+    ]
+  },
+  "test": {
+    "rows": 2426,
+    "flood_days": 69,
+    "flood_prevalence": 0.028441879637262985,
+    "accuracy": 0.950123660346249,
+    "precision": 0.3539325842696629,
+    "recall": 0.9130434782608695,
+    "f1": 0.5101214574898786,
+    "f2": 0.6938325991189427,
+    "roc_auc": 0.9783100600739086,
+    "average_precision": 0.6973989549104942,
+    "brier_score": 0.013865094329672036,
+    "confusion_matrix": [
+      [
+        2242,
+        115
+      ],
+      [
+        6,
+        63
+      ]
+    ]
+  },
+  "test_persistence_baseline": {
+    "rows": 2426,
+    "flood_days": 69,
+    "flood_prevalence": 0.028441879637262985,
+    "accuracy": 0.9868095630667766,
+    "precision": 0.7466666666666667,
+    "recall": 0.8115942028985508,
+    "f1": 0.7777777777777778,
+    "f2": 0.7977207977207977,
+    "roc_auc": 0.9017665541433781,
+    "average_precision": 0.6113489531683733,
+    "brier_score": 0.013190436933223413,
+    "confusion_matrix": [
+      [
+        2338,
+        19
+      ],
+      [
+        13,
+        56
+      ]
+    ]
+  },
+  "test_always_below_stage_baseline": {
+    "rows": 2426,
+    "flood_days": 69,
+    "flood_prevalence": 0.028441879637262985,
+    "accuracy": 0.971558120362737,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "f2": 0.0,
+    "roc_auc": 0.5,
+    "average_precision": 0.028441879637262985,
+    "brier_score": 0.028441879637262985,
+    "confusion_matrix": [
+      [
+        2357,
+        0
+      ],
+      [
+        69,
+        0
+      ]
+    ]
+  },
+  "test_by_area": {
+    "iowa-city": {
+      "rows": 615,
+      "flood_days": 0,
+      "flood_prevalence": 0.0,
+      "accuracy": 1.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "f2": 0.0,
+      "roc_auc": null,
+      "average_precision": null,
+      "brier_score": 7.145729889400692e-08,
+      "confusion_matrix": [
+        [
+          615,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    "little-falls": {
+      "rows": 708,
+      "flood_days": 8,
+      "flood_prevalence": 0.011299435028248588,
+      "accuracy": 0.9703389830508474,
+      "precision": 0.21739130434782608,
+      "recall": 0.625,
+      "f1": 0.3225806451612903,
+      "f2": 0.45454545454545453,
+      "roc_auc": 0.9083035714285714,
+      "average_precision": 0.3699598638561981,
+      "brier_score": 0.00906411532804756,
+      "confusion_matrix": [
+        [
+          682,
+          18
+        ],
+        [
+          3,
+          5
+        ]
+      ]
+    },
+    "marengo": {
+      "rows": 592,
+      "flood_days": 43,
+      "flood_prevalence": 0.07263513513513513,
+      "accuracy": 0.9358108108108109,
+      "precision": 0.5324675324675324,
+      "recall": 0.9534883720930233,
+      "f1": 0.6833333333333333,
+      "f2": 0.8232931726907631,
+      "roc_auc": 0.984686745456856,
+      "average_precision": 0.8486754077237018,
+      "brier_score": 0.023820653010899143,
+      "confusion_matrix": [
+        [
+          513,
+          36
+        ],
+        [
+          2,
+          41
+        ]
+      ]
+    },
+    "wapello": {
+      "rows": 511,
+      "flood_days": 18,
+      "flood_prevalence": 0.03522504892367906,
+      "accuracy": 0.8786692759295499,
+      "precision": 0.21794871794871795,
+      "recall": 0.9444444444444444,
+      "f1": 0.3541666666666667,
+      "f2": 0.5666666666666667,
+      "roc_auc": 0.972165877845391,
+      "average_precision": 0.5745461042857651,
+      "brier_score": 0.025670165680695838,
+      "confusion_matrix": [
+        [
+          432,
+          61
+        ],
+        [
+          1,
+          17
+        ]
+      ]
+    }
+  },
+  "test_when_latest_input_below_stage": {
+    "rows": 2351,
+    "flood_days": 13,
+    "flood_prevalence": 0.00552956188855806,
+    "accuracy": 0.9566142067205444,
+    "precision": 0.06796116504854369,
+    "recall": 0.5384615384615384,
+    "f1": 0.1206896551724138,
+    "f2": 0.22580645161290322,
+    "roc_auc": 0.9182239915772851,
+    "average_precision": 0.16420831935745744,
+    "brier_score": 0.007766095920492387,
+    "confusion_matrix": [
+      [
+        2242,
+        96
+      ],
+      [
+        6,
+        7
+      ]
+    ]
+  },
+  "development_only": true,
+  "fiji_validated": false,
+  "deployment_approved": false,
+  "limitations": [
+    "Gauge flood-stage exceedance is the observed target, not every type of flooding in a town.",
+    "No evidence of transfer to Fiji; its gauge observations and flood thresholds are still needed.",
+    "Three areas share the Iowa River; spatial transfer and performance on new river systems are not evaluated.",
+    "Approved retrospective observations can be revised; real-time publication history was not reconstructed.",
+    "Quarter-hour sampling can miss intervening peaks; incomplete or estimated days are excluded.",
+    "Probabilities are uncalibrated; these are retrospective proof-of-concept results.",
+    "Persistent multi-day flooding can make overall accuracy high; compare the persistence baseline and flood recall.",
+    "The India CSV is a different task and population, so its scores are not directly comparable."
+  ]
+}

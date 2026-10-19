@@ -12,10 +12,22 @@ from app.models.user import User
 from app.schemas.alert import (
     AlertDetailResponse, AlertResponse, AlertSuppressionRequest, AlertUpdate, ManualAlertCreate,
 )
-from app.services import alert_service
+from app.services import alert_demo_service, alert_service
+from app.core.config import get_settings
 
 admin_router = APIRouter(prefix="/api/admin/alerts", tags=["admin alerts"])
 public_router = APIRouter(prefix="/api/alerts", tags=["public alerts"])
+
+
+@admin_router.post("/demo/{scenario}", response_model=AlertDetailResponse)
+def create_demo_scenario(
+    scenario: str, db: Session = Depends(get_db), _admin: User = Depends(require_met_admin),
+) -> AlertDetailResponse:
+    if not get_settings().alert_demo_enabled:
+        raise HTTPException(status_code=404, detail="Alert demonstrations are disabled")
+    return _service_call(lambda: AlertDetailResponse.model_validate(
+        alert_demo_service.create_demo_alert(db, scenario),
+    ))
 
 
 def _service_call[T](operation: Callable[[], T]) -> T:

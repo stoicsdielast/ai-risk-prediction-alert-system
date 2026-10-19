@@ -1,0 +1,11 @@
+# Separate CPU research environments; do not install into the serving backend.
+# Preparation has not executed these heavyweight environments. Save pip freeze
+# after installation; pinned source APIs and live constructors are checked.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.12.1+cpu
+numpy==2.5.3
+pandas==3.0.6
+scipy==1.18.1
+scikit-learn==1.9.1
+pyarrow==26.0.0
+joblib==1.6.0

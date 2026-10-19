@@ -33,7 +33,33 @@ ai/models/*.pkl
 ai/models/*.joblib
 backend/ai/models/*.joblib
 backend/ai/data/processed/*.csv
+backend/ai/data/area/
+backend/ai/models/area/
+backend/ai/data/river/
+backend/ai/models/river/
+backend/ai/data/prototype_weather/
+backend/ai/models/prototype_weather/
 
 # Cache
 .pytest_cache/
 .mypy_cache/
+
+# Bangladesh research data/derived records and local binary artifacts.
+ml/data/
+ml/.venv/
+ml/artifacts/*.joblib
+ml/artifacts/*.parquet
+ml/artifacts/subset_manifest.csv
+ml/artifacts/clusters.csv
+ml/artifacts/*.png
+ml/artifacts/replay_examples.json
+ml/runs/
+ml/envs/
+ml/foundation/assets.json
+ml/foundation/weights/
+
+# Local source archive and generated document exports (Markdown sources tracked).
+/archive.zip
+/docs/OVERNIGHT_TEAM_TASKS.docx
+/docs/TEAM_TASK_TICKETS.docx
+/docs/TEAM_TASK_TICKETS.pdf

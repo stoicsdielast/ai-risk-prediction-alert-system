@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ALERT_STATUSES, createAlert, editAlert, reviewAlert } from '../api/alerts'
+import { ALERT_STATUSES, createAlert, createDemoAlert, editAlert, reviewAlert } from '../api/alerts'
 import { ApiError } from '../api/client'
 import { useAdminAlerts, useAdminRequest } from '../alerts/useAlertFeed'
 import { useAuth } from '../auth/useAuth'
@@ -111,6 +111,21 @@ export function AlertsDashboardPage() {
           </button>
         }
       />
+      {import.meta.env.DEV && (
+        <section className="prototype-panel alert-demo-controls" aria-label="Development alert scenarios">
+          <strong>Progress review demo — simulated AI output</strong>
+          <p>Creates a stored prediction and a pending alert for review. These examples do not run the trained model.</p>
+          <div>
+            <button className="button button--secondary" disabled={busy || !token} onClick={() => {
+              if (token) void mutate(() => createDemoAlert(token, 'nausori-high'), 'Nausori demo loaded. Review its status before approval.')
+            }}>Create Nausori HIGH demo</button>
+            <button className="button button--secondary" disabled={busy || !token} onClick={() => {
+              if (token) void mutate(() => createDemoAlert(token, 'labasa-very-high'), 'Labasa demo loaded. Review its status before approval.')
+            }}>Create Labasa VERY HIGH demo</button>
+          </div>
+          <small>Existing pending/approved scenarios are reused. Suppress a completed demo before starting it again.</small>
+        </section>
+      )}
       <AlertFeedStatus {...feed} />
       {error && <Alert tone="error">{error}</Alert>}
       {success && <Alert tone="success">{success}</Alert>}
@@ -232,7 +247,7 @@ export function AlertsDashboardPage() {
                   <div>
                     <dt>Source</dt>
                     <dd>
-                      {selected.source === 'AI_RECOMMENDATION'
+                      {selected.is_demo ? 'DEMO ONLY — simulated AI output' : selected.source === 'AI_RECOMMENDATION'
                         ? 'AI recommendation'
                         : 'MET official'}
                     </dd>

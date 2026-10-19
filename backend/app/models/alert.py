@@ -95,3 +95,7 @@ class Alert(Base):
         primaryjoin="Alert.prediction_id == Prediction.id", foreign_keys=[prediction_id],
         viewonly=True, lazy="selectin",
     )
+
+    @property
+    def is_demo(self) -> bool:
+        return self.prediction is not None and self.prediction.is_alert_demo

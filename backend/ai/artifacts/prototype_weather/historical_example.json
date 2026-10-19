@@ -1,0 +1,53 @@
+{
+  "model_version": "prototype-weather-next24h-poc-20261014T023525Z",
+  "input_columns": [
+    "latitude",
+    "longitude",
+    "rainfall24hMm",
+    "temperatureC",
+    "humidityPercent",
+    "windKph"
+  ],
+  "target": "Maximum observed quarter-hour river stage reaches NOAA minor flood stage in the next UTC 24 hours",
+  "decision_threshold": 0.00026690495154719357,
+  "prototype_input_compatible": true,
+  "development_only": true,
+  "evaluation_kind": "RETROSPECTIVE_REANALYSIS_POC",
+  "fiji_validated": false,
+  "operational_forecast_validated": false,
+  "calibrated": false,
+  "predictions": [
+    {
+      "flood_stage_probability": 6.817546349446949e-05,
+      "predicted_flood_stage": false,
+      "outside_training_ranges": [],
+      "area_id": "iowa-city",
+      "issued_at": "2025-12-31T00:00:00+00:00",
+      "window_end": "2026-01-01T00:00:00+00:00",
+      "observed_flood_stage": 0
+    },
+    {
+      "flood_stage_probability": 9.153281037825992e-05,
+      "predicted_flood_stage": false,
+      "outside_training_ranges": [],
+      "area_id": "little-falls",
+      "issued_at": "2025-12-31T00:00:00+00:00",
+      "window_end": "2026-01-01T00:00:00+00:00",
+      "observed_flood_stage": 0
+    },
+    {
+      "flood_stage_probability": 9.757924670284887e-05,
+      "predicted_flood_stage": false,
+      "outside_training_ranges": [],
+      "area_id": "marengo",
+      "issued_at": "2025-12-31T00:00:00+00:00",
+      "window_end": "2026-01-01T00:00:00+00:00",
+      "observed_flood_stage": 0
+    }
+  ],
+  "historical_demo": true,
+  "forecast_date": "2025-12-31",
+  "areas_without_complete_data": [
+    "wapello"
+  ]
+}

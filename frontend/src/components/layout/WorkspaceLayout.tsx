@@ -3,6 +3,9 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { PrototypeBadge } from './PrototypeBadge'
 import { Sidebar } from './Sidebar'
+import { PublicAlertProvider } from '../../alerts/PublicAlertProvider'
+import { BrowserAlertControl } from '../alerts/BrowserAlertControl'
+import { ApprovedAlertBanner } from '../alerts/ApprovedAlertBanner'
 
 export function WorkspaceLayout() {
   const { user } = useAuth()
@@ -23,6 +26,7 @@ export function WorkspaceLayout() {
   )
 
   return (
+    <PublicAlertProvider>
     <div className="workspace-shell">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div className="workspace-content">
@@ -42,9 +46,12 @@ export function WorkspaceLayout() {
           {dataBadge}
         </div>
         <main className="workspace-main">
+          <BrowserAlertControl />
+          <ApprovedAlertBanner />
           <Outlet />
         </main>
       </div>
     </div>
+    </PublicAlertProvider>
   )
 }

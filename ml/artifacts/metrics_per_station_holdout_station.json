@@ -1,0 +1,110 @@
+{
+  "CH01": {
+    "rows": 262,
+    "positives": 15,
+    "prevalence": 0.05725190839694656,
+    "precision": 0.4444444444444444,
+    "recall": 0.26666666666666666,
+    "f1": 0.3333333333333333,
+    "pr_auc_average_precision": 0.3365162815404258,
+    "roc_auc": 0.8777327935222672,
+    "brier": 0.07557961795698752,
+    "confusion_matrix_tn_fp_fn_tp": [
+      242,
+      5,
+      11,
+      4
+    ],
+    "auc_note": null
+  },
+  "CO01": {
+    "rows": 242,
+    "positives": 15,
+    "prevalence": 0.06198347107438017,
+    "precision": 0.3076923076923077,
+    "recall": 0.26666666666666666,
+    "f1": 0.2857142857142857,
+    "pr_auc_average_precision": 0.30310826740951996,
+    "roc_auc": 0.859618208516887,
+    "brier": 0.16033211756722104,
+    "confusion_matrix_tn_fp_fn_tp": [
+      218,
+      9,
+      11,
+      4
+    ],
+    "auc_note": null
+  },
+  "GA01": {
+    "rows": 250,
+    "positives": 3,
+    "prevalence": 0.012,
+    "precision": 0.05555555555555555,
+    "recall": 0.3333333333333333,
+    "f1": 0.09523809523809523,
+    "pr_auc_average_precision": 0.11410256410256409,
+    "roc_auc": 0.8043184885290148,
+    "brier": 0.22435111020146026,
+    "confusion_matrix_tn_fp_fn_tp": [
+      230,
+      17,
+      2,
+      1
+    ],
+    "auc_note": null
+  },
+  "SW174": {
+    "rows": 236,
+    "positives": 6,
+    "prevalence": 0.025423728813559324,
+    "precision": 0.2857142857142857,
+    "recall": 0.6666666666666666,
+    "f1": 0.4,
+    "pr_auc_average_precision": 0.7044730392156862,
+    "roc_auc": 0.9231884057971015,
+    "brier": 0.14383531852081072,
+    "confusion_matrix_tn_fp_fn_tp": [
+      220,
+      10,
+      2,
+      4
+    ],
+    "auc_note": null
+  },
+  "SW90": {
+    "rows": 246,
+    "positives": 2,
+    "prevalence": 0.008130081300813009,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "pr_auc_average_precision": 0.06439393939393939,
+    "roc_auc": 0.9118852459016393,
+    "brier": 0.10575356269832217,
+    "confusion_matrix_tn_fp_fn_tp": [
+      240,
+      4,
+      2,
+      0
+    ],
+    "auc_note": null
+  },
+  "TE01": {
+    "rows": 284,
+    "positives": 5,
+    "prevalence": 0.017605633802816902,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "pr_auc_average_precision": 0.24690656565656566,
+    "roc_auc": 0.9598566308243728,
+    "brier": 0.04901094497655203,
+    "confusion_matrix_tn_fp_fn_tp": [
+      278,
+      1,
+      5,
+      0
+    ],
+    "auc_note": null
+  }
+}

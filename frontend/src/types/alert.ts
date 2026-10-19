@@ -2,6 +2,7 @@ import type { AlertStatus, RiskLevel } from './prototype'
 
 export interface PublicAlert {
   id: number
+  is_demo?: boolean
   location_id: number
   location: { id: number; name: string }
   prediction_id: number | null
@@ -11,6 +12,15 @@ export interface PublicAlert {
   message: string
   created_at: string
   approved_at: string | null
+  prediction?: {
+    id: number
+    risk_level: RiskLevel
+    flood_probability: number
+    confidence_percent: number
+    model_version: string
+    is_sample: boolean
+    predicted_at: string
+  } | null
 }
 
 export interface AdminAlert extends PublicAlert {

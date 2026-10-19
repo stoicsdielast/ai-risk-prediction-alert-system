@@ -1,197 +1,73 @@
-## Running the Project
+# Flood Risk Prediction and Community Alert System
 
-The project contains two main applications:
+AI-powered flood risk prediction system designed for Fiji.
 
-* **Frontend:** React + Vite
-* **Backend:** FastAPI
+## Documentation
 
-You need to run the frontend and backend in **separate terminals**.
+- [Bangladesh research proof of concept: reproduction, API and limitations](docs/RESEARCH_BANGLADESH.md)
+- [Measured Bangladesh dataset audit and model report](ml/artifacts/technical_report.md)
+- [Presentation handbook: project, architecture, security, privacy, demo, and deployment](docs/PRESENTATION_HANDBOOK.md)
+- [Authentication system: how it works](docs/AUTHENTICATION_WORKFLOW.md)
+- [Frontend prototype: architecture, setup, and demo guide](docs/PROTOTYPE_UI.md)
+- [Frontend setup and usage](frontend/README.md)
+- [Backend setup and API usage](backend/README.md)
+- [Alert System: lifecycle, endpoints, setup, and lecturer demonstration](docs/ALERT_SYSTEM.md)
 
-### Prerequisites
+## Project Modules
 
-Make sure you have installed:
+1. Flood Risk Dashboard
+2. Weather Data Management
+3. AI Flood Risk Prediction
+4. Flood Mapping
+5. Alert System and System Testing
 
-* Python 3.10+
-* Node.js
-* npm
-* Git
+## Technology Stack
 
-Check your installations:
+### Frontend
+- React
+- TypeScript
+- Vite
 
-```bash
-python --version
-node --version
-npm --version
-git --version
-```
+### Backend
+- FastAPI
+- Python
 
----
+### AI
+- Python
+- Pandas
+- Scikit-learn
 
-## 1. Clone the Repository
+### Database
+- PostgreSQL
 
-```bash
-git clone <repository-url>
-cd fiji-flood-risk-system
-```
+## Development
 
-Switch to your assigned branch:
-
-```bash
-git switch <your-branch>
-```
-
-For example:
-
-```bash
-git switch rishi
-```
-
----
-
-## 2. Run the Backend
-
-Open a terminal and enter the backend directory:
-
-```bash
-cd backend
-```
-
-### Create a Python Virtual Environment
-
-Only required the first time:
-
-```bash
-python -m venv .venv
-```
-
-Activate it on Linux/macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-On Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-### Install Backend Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Start FastAPI
-
-From inside the `backend` directory:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-The backend should run at:
-
-```text
-http://127.0.0.1:8000
-```
-
-FastAPI API documentation is available at:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Keep this terminal running.
-
----
-
-## 3. Run the Frontend
-
-Open a **second terminal**.
-
-From the main project directory:
+### Frontend
 
 ```bash
 cd frontend
-```
-
-Install the frontend dependencies:
-
-```bash
 npm install
-```
-
-This only needs to be done when setting up the project for the first time or when new packages are added.
-
-Start the Vite development server:
-
-```bash
 npm run dev
 ```
 
-The frontend will usually run at:
+The current React milestone includes registration, login, protected navigation,
+MET-admin account review, a public Fiji weather/risk map, an admin overview, and
+a demonstration alert-review workflow. Flood-domain data and alert actions are
+clearly labelled local prototype data. See the [prototype guide](docs/PROTOTYPE_UI.md)
+for the exact live-versus-demo boundary and walkthrough.
 
-```text
-http://localhost:5173
-```
+### Backend authentication
 
-Open this address in your browser.
+The backend authentication milestones implement registration, login, JWT
+access tokens, protected routes, server-side roles, and MET admin account
+review using PostgreSQL, SQLAlchemy, and Argon2. See the
+[backend authentication guide](backend/README.md) for setup, usage, testing,
+API examples, database verification, and troubleshooting.
 
----
+### Backend alerts
 
-## 4. Both Servers Must Be Running
-
-You should have two terminals open:
-
-```text
-Terminal 1
-└── FastAPI Backend
-    └── http://127.0.0.1:8000
-
-Terminal 2
-└── React/Vite Frontend
-    └── http://localhost:5173
-```
-
-The frontend sends requests to the FastAPI backend to retrieve or update data.
-
-```text
-Browser
-   │
-   ▼
-React / Vite Frontend
-localhost:5173
-   │
-   │ HTTP/API Request
-   ▼
-FastAPI Backend
-localhost:8000
-   │
-   ▼
-Database / AI Model / Weather Data
-```
-
----
-
-## Quick Start
-
-After the initial setup, use these commands whenever you want to run the project.
-
-### Terminal 1 — Backend
-
-```bash
-cd backend
-source .venv/bin/activate
-uvicorn app.main:app --reload
-```
-
-### Terminal 2 — Frontend
-
-```bash
-cd frontend
-npm run dev
-```
-
-> **Important:** Do not close either terminal while working on the project. Both the frontend and backend need to be running for the full application to work.
-
+The Alert System persists pending AI recommendations and manual MET drafts,
+records administrator review, and exposes approved alerts publicly. The
+notification hook logs development activity without delivering notifications.
+The frontend alert screen still uses local demo data. See the
+[Alert System guide](docs/ALERT_SYSTEM.md) for schema setup and API demonstrations.

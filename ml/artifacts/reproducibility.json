@@ -1,0 +1,11 @@
+{
+  "method": "Independent rerun of the predeclared experiment, same pinned data/versions/seed/threads; no tuning changes",
+  "comparison_directory": "ml/runs/reproduction",
+  "checks": {
+    "subset.parquet": true,
+    "classifier.joblib": true,
+    "thresholds.json": true,
+    "clustering.json": true,
+    "evaluation_excluding_wall_time": true
+  }
+}

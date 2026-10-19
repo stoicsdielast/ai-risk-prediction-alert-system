@@ -1,0 +1,52 @@
+{
+  "comparison": [
+    {
+      "k": 2,
+      "train_silhouette": 0.4769738130345369,
+      "inertia": 52523.49257583472
+    },
+    {
+      "k": 3,
+      "train_silhouette": 0.5092558928929838,
+      "inertia": 36444.28371825114
+    },
+    {
+      "k": 4,
+      "train_silhouette": 0.4923280485278952,
+      "inertia": 28722.09561931333
+    },
+    {
+      "k": 5,
+      "train_silhouette": 0.4321475848127174,
+      "inertia": 25177.570617580604
+    }
+  ],
+  "selected_k": 3,
+  "features": [
+    "rainfall_local_mm",
+    "rainfall_upstream_mm",
+    "soil_moisture_local",
+    "river_discharge_m3s",
+    "rainfall_local_mm_sum7d",
+    "rainfall_upstream_mm_sum14d",
+    "river_discharge_m3s_mean7d"
+  ],
+  "weather_patterns": {
+    "0": [
+      "soil_moisture_local: above training mean (1.05 SD)",
+      "rainfall_upstream_mm_sum14d: above training mean (1.00 SD)",
+      "rainfall_local_mm_sum7d: above training mean (0.99 SD)"
+    ],
+    "1": [
+      "rainfall_upstream_mm_sum14d: below training mean (-0.62 SD)",
+      "soil_moisture_local: below training mean (-0.61 SD)",
+      "rainfall_local_mm_sum7d: below training mean (-0.52 SD)"
+    ],
+    "2": [
+      "river_discharge_m3s_mean7d: above training mean (2.84 SD)",
+      "river_discharge_m3s: above training mean (2.83 SD)",
+      "rainfall_upstream_mm_sum14d: above training mean (1.08 SD)"
+    ]
+  },
+  "interpretation": "Unsupervised weather/hydrology groups. Cluster numbers are arbitrary and are not verified flood-risk labels."
+}

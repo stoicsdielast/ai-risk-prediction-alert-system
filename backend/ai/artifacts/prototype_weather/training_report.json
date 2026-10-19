@@ -1,0 +1,385 @@
+{
+  "model_version": "prototype-weather-next24h-poc-20261014T023525Z",
+  "trained_at": "2026-10-14T02:35:25.072905+00:00",
+  "geography": "Iowa River at Marengo, Iowa City and Wapello; Passaic River at Little Falls NJ, United States",
+  "target": "Maximum observed quarter-hour river stage reaches NOAA minor flood stage in the next UTC 24 hours",
+  "feature_contract": "frontend/src/types/prototype.ts WeatherLocation numeric weather/location fields",
+  "input_columns": [
+    "latitude",
+    "longitude",
+    "rainfall24hMm",
+    "temperatureC",
+    "humidityPercent",
+    "windKph"
+  ],
+  "target_column": "observed_flood_stage",
+  "weather_semantics": "Preceding-24-hour rain total; instantaneous temperature/humidity/wind at issue; gauge coordinates",
+  "evaluation_kind": "RETROSPECTIVE_REANALYSIS_POC",
+  "dataset_sha256": "36d5c70fffbaf505a91fc7101d1fa2be749f32a3911b80d37d5f88d16d5d0d6d",
+  "dataset_rows": 7187,
+  "software": {
+    "python": "3.14.7",
+    "sklearn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.3"
+  },
+  "selected_model": "gradient_boosting",
+  "decision_threshold": 0.00026690495154719357,
+  "selection": "Validation average precision, ROC-AUC, then lower Brier score; threshold maximizes validation F2 across observed validation probabilities, ties prefer higher thresholds. No refit; test outcomes are not used in selection.",
+  "split": {
+    "validation_start": "2022-01-01",
+    "test_start": "2024-01-01",
+    "gap_days": 30
+  },
+  "split_support": {
+    "train": {
+      "rows": 2138,
+      "flood_stage_days": 15,
+      "below_stage_days": 2123,
+      "flood_episodes": 2,
+      "first_date": "2020-01-10",
+      "last_date": "2021-12-01"
+    },
+    "validation": {
+      "rows": 2396,
+      "flood_stage_days": 6,
+      "below_stage_days": 2390,
+      "flood_episodes": 2,
+      "first_date": "2022-01-02",
+      "last_date": "2023-12-01"
+    },
+    "test": {
+      "rows": 2426,
+      "flood_stage_days": 69,
+      "below_stage_days": 2357,
+      "flood_episodes": 6,
+      "first_date": "2024-01-02",
+      "last_date": "2025-12-31"
+    }
+  },
+  "training_input_ranges": {
+    "latitude": {
+      "min": 40.884722222222,
+      "max": 41.81272566
+    },
+    "longitude": {
+      "min": -92.064792,
+      "max": -74.226111111111
+    },
+    "rainfall24hMm": {
+      "min": 0.0,
+      "max": 94.7
+    },
+    "temperatureC": {
+      "min": -21.6,
+      "max": 33.6
+    },
+    "humidityPercent": {
+      "min": 14.0,
+      "max": 97.0
+    },
+    "windKph": {
+      "min": 0.5,
+      "max": 45.2
+    }
+  },
+  "validation_models": {
+    "logistic_regression": {
+      "rows": 2396,
+      "flood_days": 6,
+      "flood_prevalence": 0.0025041736227045075,
+      "accuracy": 0.8080133555926544,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "f2": 0.0,
+      "roc_auc": 0.4785216178521618,
+      "average_precision": 0.0026890767990604214,
+      "brier_score": 0.1312834618426256,
+      "confusion_matrix": [
+        [
+          1936,
+          454
+        ],
+        [
+          6,
+          0
+        ]
+      ]
+    },
+    "random_forest": {
+      "rows": 2396,
+      "flood_days": 6,
+      "flood_prevalence": 0.0025041736227045075,
+      "accuracy": 0.9974958263772955,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "f2": 0.0,
+      "roc_auc": 0.4402370990237099,
+      "average_precision": 0.0024394422616933376,
+      "brier_score": 0.0061186777885736034,
+      "confusion_matrix": [
+        [
+          2390,
+          0
+        ],
+        [
+          6,
+          0
+        ]
+      ]
+    },
+    "gradient_boosting": {
+      "rows": 2396,
+      "flood_days": 6,
+      "flood_prevalence": 0.0025041736227045075,
+      "accuracy": 0.9974958263772955,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "f2": 0.0,
+      "roc_auc": 0.5563807531380753,
+      "average_precision": 0.003132959558082,
+      "brier_score": 0.002736063539514244,
+      "confusion_matrix": [
+        [
+          2390,
+          0
+        ],
+        [
+          6,
+          0
+        ]
+      ]
+    }
+  },
+  "validation_selected_threshold": {
+    "rows": 2396,
+    "flood_days": 6,
+    "flood_prevalence": 0.0025041736227045075,
+    "accuracy": 0.5980801335559266,
+    "precision": 0.004145077720207254,
+    "recall": 0.6666666666666666,
+    "f1": 0.008238928939237899,
+    "f2": 0.020222446916076844,
+    "roc_auc": 0.5563807531380753,
+    "average_precision": 0.003132959558082,
+    "brier_score": 0.002736063539514244,
+    "confusion_matrix": [
+      [
+        1429,
+        961
+      ],
+      [
+        2,
+        4
+      ]
+    ]
+  },
+  "test": {
+    "rows": 2426,
+    "flood_days": 69,
+    "flood_prevalence": 0.028441879637262985,
+    "accuracy": 0.5952184666117065,
+    "precision": 0.05722599418040737,
+    "recall": 0.855072463768116,
+    "f1": 0.10727272727272727,
+    "f2": 0.22570772762050498,
+    "roc_auc": 0.7664250182927204,
+    "average_precision": 0.09856841592088904,
+    "brier_score": 0.02819592218950188,
+    "confusion_matrix": [
+      [
+        1385,
+        972
+      ],
+      [
+        10,
+        59
+      ]
+    ]
+  },
+  "test_training_prevalence_baseline": {
+    "rows": 2426,
+    "flood_days": 69,
+    "flood_prevalence": 0.028441879637262985,
+    "accuracy": 0.971558120362737,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "f2": 0.0,
+    "roc_auc": 0.5,
+    "average_precision": 0.028441879637262985,
+    "brier_score": 0.02809201160712938,
+    "confusion_matrix": [
+      [
+        2357,
+        0
+      ],
+      [
+        69,
+        0
+      ]
+    ]
+  },
+  "test_always_below_stage_baseline": {
+    "rows": 2426,
+    "flood_days": 69,
+    "flood_prevalence": 0.028441879637262985,
+    "accuracy": 0.971558120362737,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "f2": 0.0,
+    "roc_auc": 0.5,
+    "average_precision": 0.028441879637262985,
+    "brier_score": 0.028441879637262985,
+    "confusion_matrix": [
+      [
+        2357,
+        0
+      ],
+      [
+        69,
+        0
+      ]
+    ]
+  },
+  "test_external_gauge_persistence": {
+    "rows": 2426,
+    "flood_days": 69,
+    "flood_prevalence": 0.028441879637262985,
+    "accuracy": 0.9868095630667766,
+    "precision": 0.7466666666666667,
+    "recall": 0.8115942028985508,
+    "f1": 0.7777777777777778,
+    "f2": 0.7977207977207977,
+    "roc_auc": 0.9017665541433781,
+    "average_precision": 0.6113489531683733,
+    "brier_score": 0.013190436933223413,
+    "confusion_matrix": [
+      [
+        2338,
+        19
+      ],
+      [
+        13,
+        56
+      ]
+    ]
+  },
+  "external_benchmark_note": "Gauge persistence uses two-day-old river stage unavailable in the demo; it is a reference only and never a model input.",
+  "test_by_area": {
+    "iowa-city": {
+      "rows": 615,
+      "flood_days": 0,
+      "flood_prevalence": 0.0,
+      "accuracy": 0.7203252032520325,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "f2": 0.0,
+      "roc_auc": null,
+      "average_precision": null,
+      "brier_score": 6.488558359519815e-06,
+      "confusion_matrix": [
+        [
+          443,
+          172
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    "little-falls": {
+      "rows": 708,
+      "flood_days": 8,
+      "flood_prevalence": 0.011299435028248588,
+      "accuracy": 0.5635593220338984,
+      "precision": 0.006557377049180328,
+      "recall": 0.25,
+      "f1": 0.012779552715654952,
+      "f2": 0.02967359050445104,
+      "roc_auc": 0.33991071428571423,
+      "average_precision": 0.009092082096134503,
+      "brier_score": 0.0113848034289168,
+      "confusion_matrix": [
+        [
+          397,
+          303
+        ],
+        [
+          6,
+          2
+        ]
+      ]
+    },
+    "marengo": {
+      "rows": 592,
+      "flood_days": 43,
+      "flood_prevalence": 0.07263513513513513,
+      "accuracy": 0.5625,
+      "precision": 0.14,
+      "recall": 0.9767441860465116,
+      "f1": 0.24489795918367346,
+      "f2": 0.4449152542372881,
+      "roc_auc": 0.82687338501292,
+      "average_precision": 0.25239228352046167,
+      "brier_score": 0.07090766496118453,
+      "confusion_matrix": [
+        [
+          291,
+          258
+        ],
+        [
+          1,
+          42
+        ]
+      ]
+    },
+    "wapello": {
+      "rows": 511,
+      "flood_days": 18,
+      "flood_prevalence": 0.03522504892367906,
+      "accuracy": 0.5264187866927593,
+      "precision": 0.05905511811023622,
+      "recall": 0.8333333333333334,
+      "f1": 0.11029411764705882,
+      "f2": 0.23006134969325154,
+      "roc_auc": 0.6737097137705657,
+      "average_precision": 0.07506479439735385,
+      "brier_score": 0.03593256024196892,
+      "confusion_matrix": [
+        [
+          254,
+          239
+        ],
+        [
+          3,
+          15
+        ]
+      ]
+    }
+  },
+  "prototype_input_compatible": true,
+  "development_only": true,
+  "operational_forecast_validated": false,
+  "fiji_validated": false,
+  "calibrated": false,
+  "limitations": [
+    "ERA5 is retrospective reanalysis published after weather valid time; this is a hindcast association POC, not validated operational forecast skill.",
+    "US gauge flood-stage exceedance does not establish flood or non-flood conditions throughout an area, or transfer to Fiji.",
+    "Only four gauges across two river systems; no unseen-area or unseen-river validation.",
+    "Very few independent flood episodes in training and validation make model selection and thresholds unstable; consult split_support.",
+    "Test years were previously inspected for the river-input POC; this comparison is development evidence, not a fresh independent final evaluation.",
+    "An initial weather run exposed a coarse fixed threshold grid that missed small scores; threshold search was corrected to all validation score cutoffs after that run. A fresh future evaluation is still required.",
+    "The cohort inherits the earlier river pipeline's strict gauge coverage and history exclusions.",
+    "Quarter-hour stage sampling can miss intervening peaks; incomplete or estimated observations are excluded.",
+    "Local weather omits upstream rainfall, storage and river stage. Temperature/humidity/wind are snapshots, not future daily averages.",
+    "Probabilities are uncalibrated. High accuracy can reflect rare floods; inspect precision, recall and average precision.",
+    "The frontend still uses prototype weather fixtures; this training command does not connect a live weather feed or publish alerts."
+  ]
+}

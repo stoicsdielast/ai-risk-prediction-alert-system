@@ -1,0 +1,33 @@
+{
+  "model_version": "bd-research-e9dcf749e0a7-v1",
+  "selected_model": "logistic_regression",
+  "trained_at": "2026-10-19T00:15:03.398644+00:00",
+  "research_mode": true,
+  "mode": "historical_replay",
+  "horizon_hours": 24,
+  "target": "flood_within_24h",
+  "negative_label": "Source-observed proxy negative, not independently verified physical non-flood",
+  "disclaimer": "Research Proof of Concept \u2014 Bangladesh historical replay. Not validated for Fiji or operational public warnings. Labels are source-qualified flood-detection proxies, not independently verified ground truth. Probability tiers are provisional presentation thresholds.",
+  "versions": {
+    "pandas": "3.0.6",
+    "numpy": "2.5.3",
+    "scikit-learn": "1.9.1",
+    "joblib": "1.6.0",
+    "pyarrow": "26.0.0",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10",
+    "matplotlib": "3.11.2"
+  },
+  "python": "3.14.7",
+  "classifier_sha256": "bc7ed7a8f57c5eadfa74679211de26c3c1de0aa1ff3f2ce1886c8106780b0063",
+  "source": "https://github.com/Srabon-bot/Bangladesh-flood-data-set",
+  "source_commit": "4d6ec74e22a63c1e33012d0f8d106e238dda4e1c",
+  "tabfm": {
+    "status": "not_benchmarked",
+    "reason": "Optional benchmark deferred; no separate compatible environment or licensed weights installed. Baselines complete independently.",
+    "source": "https://github.com/google-research/tabfm",
+    "default_context_rows": 100,
+    "licensing": "Apache-2.0 code; default weights have separate non-commercial, non-production license. Review terms before download."
+  },
+  "smoke_only": false
+}

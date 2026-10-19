@@ -346,7 +346,7 @@ def test_admin_approval_persists_audit_and_exposes_safe_public_response(
     assert len(public.json()) == 1
     assert public.json()[0]["id"] == alert["id"]
     assert set(public.json()[0]) == {
-        "id", "location_id", "location", "prediction_id", "prediction", "severity",
+        "id", "is_demo", "location_id", "location", "prediction_id", "prediction", "severity",
         "status", "source", "message", "created_at", "approved_at",
     }
     assert set(public.json()[0]["location"]) == {"id", "name"}

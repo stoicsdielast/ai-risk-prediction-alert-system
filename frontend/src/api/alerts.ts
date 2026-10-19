@@ -1,6 +1,7 @@
 import { apiRequest } from './client'
 import type { AdminAlert, AlertAction, AlertDraft, PublicAlert } from '../types/alert'
 import type { AlertStatus } from '../types/prototype'
+import { isPublicAlert } from '../alerts/validateAlert'
 
 const ADMIN_URL = '/api/admin/alerts'
 const PAGE_SIZE = 200
@@ -15,6 +16,7 @@ async function readPages<T>(path: string, signal?: AbortSignal, token?: string):
       token,
       signal,
     })
+    if (!Array.isArray(page)) throw new Error('The alert service returned invalid data. Please retry.')
     rows.push(...page)
     if (page.length < PAGE_SIZE) return rows
   }
@@ -33,7 +35,12 @@ export async function getAdminAlerts(token: string, signal?: AbortSignal): Promi
 
 export async function getPublicAlerts(signal?: AbortSignal): Promise<PublicAlert[]> {
   const rows = await readPages<PublicAlert>('/api/alerts/active', signal)
+  if (!rows.every(isPublicAlert)) throw new Error('The alert service returned invalid data. Please retry.')
   return [...new Map(rows.map((alert) => [alert.id, alert])).values()]
+}
+
+export function createDemoAlert(token: string, scenario: 'nausori-high' | 'labasa-very-high') {
+  return apiRequest<AdminAlert>(`${ADMIN_URL}/demo/${scenario}`, { token, method: 'POST' })
 }
 
 export function createAlert(token: string, draft: AlertDraft) {

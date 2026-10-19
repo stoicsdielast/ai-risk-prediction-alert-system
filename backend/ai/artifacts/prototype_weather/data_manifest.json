@@ -1,0 +1,99 @@
+{
+  "feature_contract": "frontend/src/types/prototype.ts WeatherLocation numeric weather/location fields",
+  "input_columns": [
+    "latitude",
+    "longitude",
+    "rainfall24hMm",
+    "temperatureC",
+    "humidityPercent",
+    "windKph"
+  ],
+  "feature_source": "Open-Meteo ERA5 reanalysis; weather data CC BY 4.0",
+  "weather_documentation": "https://open-meteo.com/en/docs/historical-weather-api",
+  "label_source": "Approved USGS quarter-hour stage observations and documented NOAA minor flood stages",
+  "river_dataset_sha256": "e90bed8a8078997d9d3b3c26c6d71dad711d0820714c113e1b27c2df35426c71",
+  "dataset_sha256": "36d5c70fffbaf505a91fc7101d1fa2be749f32a3911b80d37d5f88d16d5d0d6d",
+  "rows": 7187,
+  "positive_rows": 100,
+  "negative_rows": 7087,
+  "weather_semantics": "Rain during preceding 24 hours ending at issue; temperature/humidity/wind at issue; location coordinates",
+  "evaluation_kind": "RETROSPECTIVE_REANALYSIS_POC",
+  "fiji_validated": false,
+  "limitations": [
+    "ERA5 is retrospective reanalysis published after valid time, not measurements demonstrably available at forecast issue.",
+    "Thus this is a next-day association hindcast, not an operational forecast-skill claim.",
+    "The target is US gauge flood-stage exceedance, not observed flood inundation throughout a Fiji area.",
+    "The label cohort matches the prior river POC and inherits its strict gauge coverage/history exclusions.",
+    "Point weather cannot represent all upstream rainfall, drainage or river storage."
+  ],
+  "sources": [
+    {
+      "area_id": "marengo",
+      "url": "https://archive-api.open-meteo.com/v1/archive?latitude=41.81272566&longitude=-92.064792&start_date=2020-01-09&end_date=2025-12-31&hourly=rain%2Ctemperature_2m%2Crelative_humidity_2m%2Cwind_speed_10m&models=era5&timezone=UTC&temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm",
+      "retrieved_at": "2026-10-14T02:29:36.483926+00:00",
+      "sha256": "765101f2575981480b34bf26a7a090cf4108ccde36359a8f224dfa07809af3f2",
+      "coordinate_source_sha256": "6191739308c589c244def94b50fd37e2a36609886632a0871086acbfc0313804",
+      "requested_coordinates": [
+        41.81272566,
+        -92.064792
+      ],
+      "weather_grid_coordinates": [
+        41.75,
+        -92.0
+      ],
+      "rows": 1237,
+      "missing_weather_dates": []
+    },
+    {
+      "area_id": "iowa-city",
+      "url": "https://archive-api.open-meteo.com/v1/archive?latitude=41.6566832&longitude=-91.5410017&start_date=2020-01-09&end_date=2025-12-31&hourly=rain%2Ctemperature_2m%2Crelative_humidity_2m%2Cwind_speed_10m&models=era5&timezone=UTC&temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm",
+      "retrieved_at": "2026-10-14T02:29:39.217180+00:00",
+      "sha256": "ea4c5d8aa826429166462294321617aaacd60dd42a283bbae4ea10be56bbf4cf",
+      "coordinate_source_sha256": "5eac7ed12998edd0af868d2db1951c67c7a5d3a5a703a6b4ad800366fc97e6f3",
+      "requested_coordinates": [
+        41.6566832,
+        -91.5410017
+      ],
+      "weather_grid_coordinates": [
+        41.75,
+        -91.5
+      ],
+      "rows": 1957,
+      "missing_weather_dates": []
+    },
+    {
+      "area_id": "wapello",
+      "url": "https://archive-api.open-meteo.com/v1/archive?latitude=41.1780861&longitude=-91.1820939&start_date=2020-01-09&end_date=2025-12-30&hourly=rain%2Ctemperature_2m%2Crelative_humidity_2m%2Cwind_speed_10m&models=era5&timezone=UTC&temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm",
+      "retrieved_at": "2026-10-14T02:29:42.658598+00:00",
+      "sha256": "3b3d94068b280ab62340aa3ef74389dc30d2a8b5d9f15b4a0cb0b9cc29b11cc7",
+      "coordinate_source_sha256": "2e56472264429f9d8fddc67b8f0e5ef62fe4b4c5ca937e8cd1178c31276d1e9f",
+      "requested_coordinates": [
+        41.1780861,
+        -91.1820939
+      ],
+      "weather_grid_coordinates": [
+        41.25,
+        -91.25
+      ],
+      "rows": 1873,
+      "missing_weather_dates": []
+    },
+    {
+      "area_id": "little-falls",
+      "url": "https://archive-api.open-meteo.com/v1/archive?latitude=40.884722222222&longitude=-74.226111111111&start_date=2020-01-09&end_date=2025-12-31&hourly=rain%2Ctemperature_2m%2Crelative_humidity_2m%2Cwind_speed_10m&models=era5&timezone=UTC&temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm",
+      "retrieved_at": "2026-10-14T02:29:46.475952+00:00",
+      "sha256": "6c8e602fe71347d6a6ab34e70df98f482e2e1c2b546b28b7b7819160fdd7528b",
+      "coordinate_source_sha256": "daa4e224998b16bb6cdfa36826338e88f9cbf63ce6ed6ea4bb197d3cccc4f1de",
+      "requested_coordinates": [
+        40.884722222222,
+        -74.226111111111
+      ],
+      "weather_grid_coordinates": [
+        41.0,
+        -74.25
+      ],
+      "rows": 2120,
+      "missing_weather_dates": []
+    }
+  ]
+}

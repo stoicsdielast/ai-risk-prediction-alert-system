@@ -5,6 +5,7 @@ import { ApiError } from '../api/client'
 import { useAuth } from '../auth/useAuth'
 
 export const ALERT_REFRESH_MS = 30_000
+export { usePublicAlerts } from './PublicAlertContext'
 
 export function usePollingResource<T>(load: (signal: AbortSignal) => Promise<T>) {
   const [data, setData] = useState<T | null>(null)
@@ -84,6 +85,6 @@ export function useAdminAlerts() {
   return usePollingResource(load)
 }
 
-export function usePublicAlerts() {
+export function usePublicAlertPolling() {
   return usePollingResource(getPublicAlerts)
 }

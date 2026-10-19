@@ -1,0 +1,13 @@
+label,regime,rows,horizon
+0.0,observed,86504,24h
+1.0,observed,4846,24h
+1.0,unobserved_positive,9500,24h
+,,738490,24h
+0.0,observed,84289,48h
+1.0,observed,7001,48h
+1.0,unobserved_positive,9992,48h
+,,738058,48h
+0.0,observed,82324,72h
+1.0,observed,8906,72h
+1.0,unobserved_positive,10474,72h
+,,737636,72h

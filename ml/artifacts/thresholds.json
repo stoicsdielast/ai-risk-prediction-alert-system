@@ -1,0 +1,10 @@
+{
+  "binary_threshold": 0.8665842897522157,
+  "selected_on": "validation maximum F1",
+  "presentation_tiers": {
+    "MODERATE": 0.25,
+    "HIGH": 0.5,
+    "VERY_HIGH": 0.75
+  },
+  "presentation_status": "Provisional; not calibrated safety thresholds"
+}

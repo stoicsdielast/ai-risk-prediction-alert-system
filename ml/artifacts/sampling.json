@@ -1,0 +1,19 @@
+{
+  "method": "Lowest SHA256(station_id:date:314), target-independent uniform sample, before partition assignment",
+  "eligible_rows": 91350,
+  "subset_rows": 30000,
+  "seed": 314,
+  "screened_prevalence": 0.05304871373836891,
+  "subset_prevalence": 0.0524,
+  "holdout_stations": [
+    "SW90",
+    "TE01",
+    "GA01",
+    "SW174",
+    "CH01",
+    "CO01"
+  ],
+  "embargo_days": 3,
+  "excluded": "Holdout-station dates before test start and 3 days before each time boundary remain excluded.",
+  "subset_sha256": "e9dcf749e0a7be3c5f88945481c67bdc9ea8d5fc796b93d7bbc2a53078cfa49f"
+}

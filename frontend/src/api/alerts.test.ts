@@ -4,6 +4,13 @@ import { installAlertApi, sampleAlert } from '../test/alertApiFixture'
 
 afterEach(() => vi.unstubAllGlobals())
 
+it.each([null, [{ id: 4 }], [sampleAlert()], [sampleAlert({ status: 'APPROVED', approved_at: 'invalid' })]])(
+  'rejects malformed or unpublished public-feed data (%j)', async (body) => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })))
+    await expect(getPublicAlerts()).rejects.toThrow('invalid data')
+  },
+)
+
 it('includes alerts beyond the first page in admin results', async () => {
   const fixtures = Array.from({ length: 201 }, (_, index) => sampleAlert({ id: index + 1 }))
   const { fetchMock } = installAlertApi(fixtures)

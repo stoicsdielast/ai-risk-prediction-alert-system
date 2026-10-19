@@ -3,6 +3,11 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { ALERT_REFRESH_MS } from '../alerts/useAlertFeed'
 import { installAlertApi, sampleAlert } from '../test/alertApiFixture'
 import { CommunityAlertsPage } from './CommunityAlertsPage'
+import { PublicAlertProvider } from '../alerts/PublicAlertProvider'
+
+function renderPage() {
+  return render(<PublicAlertProvider><CommunityAlertsPage /></PublicAlertProvider>)
+}
 
 afterEach(() => {
   vi.useRealTimers()
@@ -13,7 +18,7 @@ it('shows severity, location, message and timestamps without management controls
   const { fetchMock } = installAlertApi([
     sampleAlert({ status: 'APPROVED', approved_at: '2026-10-14T01:00:00Z' }),
   ])
-  render(<CommunityAlertsPage />)
+  renderPage()
   expect(await screen.findByRole('heading', { name: 'Suva' })).toBeInTheDocument()
   expect(screen.getByText('High')).toBeInTheDocument()
   expect(screen.getByText('TEST ONLY: Move to higher ground.')).toBeInTheDocument()
@@ -28,7 +33,7 @@ it('automatically removes withdrawn alerts and stops polling on unmount', async 
   const { state, fetchMock } = installAlertApi([
     sampleAlert({ status: 'APPROVED', approved_at: '2026-10-14T01:00:00Z' }),
   ])
-  const view = render(<CommunityAlertsPage />)
+  const view = renderPage()
   await act(async () => {})
   expect(screen.getByRole('heading', { name: 'Suva' })).toBeInTheDocument()
   state.alerts[0].status = 'SUPPRESSED'
@@ -50,7 +55,7 @@ it('marks stale alerts when refresh fails and recovers on the next refresh', asy
   const { state } = installAlertApi([
     sampleAlert({ status: 'APPROVED', approved_at: '2026-10-14T01:00:00Z' }),
   ])
-  render(<CommunityAlertsPage />)
+  renderPage()
   await act(async () => {})
   state.failure = { path: '/api/alerts/active', status: 500, detail: 'Test-only service outage' }
   await act(async () => {
@@ -67,7 +72,7 @@ it('marks stale alerts when refresh fails and recovers on the next refresh', asy
 
 it('shows a network failure without pretending there are no alerts', async () => {
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
-  render(<CommunityAlertsPage />)
+  renderPage()
   expect(await screen.findByRole('alert')).toHaveTextContent('Cannot reach the server')
   expect(screen.queryByText('No active alerts')).not.toBeInTheDocument()
 })

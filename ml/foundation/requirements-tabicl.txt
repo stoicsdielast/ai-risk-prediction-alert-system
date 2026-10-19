@@ -1,0 +1,2 @@
+-r requirements-common.txt
+tabicl @ git+https://github.com/soda-inria/tabicl@c91f00df184a5097e584cb376f7e699e9f3444c4
