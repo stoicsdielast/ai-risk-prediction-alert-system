@@ -7,7 +7,7 @@ import { PageHeader } from '../components/layout/PageHeader'
 import { DataPill, RiskPill, StatusPill } from '../components/pills/DataPill'
 import { usePrototypeData } from '../prototype/usePrototypeData'
 import { formatRelativeTime } from '../utils/date'
-import { ResearchReplayPanel } from '../components/research/ResearchReplayPanel'
+import { SyntheticReplayPanel } from '../components/research/SyntheticReplayPanel'
 
 function MetricIcon({ name }: { name: 'locations' | 'active' | 'pending' | 'risk' }) {
   if (name === 'locations') {
@@ -116,7 +116,7 @@ export function AdminDashboardPage() {
         <Alert tone="error">Active alert count is unavailable. {publicFeed.error}</Alert>
       )}
 
-      <ResearchReplayPanel />
+      <SyntheticReplayPanel />
 
       <section className="metric-grid" aria-label="Operational summary">
         <SummaryCard

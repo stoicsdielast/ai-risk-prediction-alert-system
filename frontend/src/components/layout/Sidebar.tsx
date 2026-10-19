@@ -60,6 +60,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <span>Community alerts</span>
           </NavLink>
 
+          <NavLink to="/simulation" onClick={onClose}>
+            <SidebarIcon name="map" />
+            <span>Synthetic replay</span>
+          </NavLink>
+
           {isAdmin && (
             <NavLink to="/admin/alerts" onClick={onClose}>
               <SidebarIcon name="alerts" />

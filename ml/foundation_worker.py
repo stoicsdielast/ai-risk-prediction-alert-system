@@ -52,7 +52,7 @@ def make_estimator(name, asset, device="cpu"):
         from tabicl import TabICLClassifier
         return TabICLClassifier(model_path=asset["path"], allow_auto_download=False,
             checkpoint_version="tabicl-classifier-v2-20260212.ckpt", device=device,
-            n_estimators=4, batch_size=1, random_state=314, n_jobs=2, kv_cache=False)
+            n_estimators=4, batch_size=1, random_state=314, n_jobs=2, kv_cache=asset.get("kv_cache", False))
     raise ValueError("Unsupported foundation model")
 
 

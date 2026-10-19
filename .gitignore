@@ -57,6 +57,7 @@ ml/runs/
 ml/envs/
 ml/foundation/assets.json
 ml/foundation/weights/
+ml/artifacts/synthetic/
 
 # Local source archive and generated document exports (Markdown sources tracked).
 /archive.zip

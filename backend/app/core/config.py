@@ -10,6 +10,8 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    synthetic_model_dir: Path = Field(default=BACKEND_DIR.parent / "ml/artifacts/synthetic/v1", validation_alias="SYNTHETIC_MODEL_DIR")
+    synthetic_demo_enabled: bool = Field(default=False, validation_alias="SYNTHETIC_DEMO_ENABLED")
     research_model_dir: Path = Field(
         default=BACKEND_DIR.parent / "ml" / "artifacts", validation_alias="RESEARCH_MODEL_DIR",
     )

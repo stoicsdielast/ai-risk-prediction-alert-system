@@ -4,7 +4,7 @@ import { useAuth } from '../auth/useAuth'
 import { Alert } from '../components/Alert'
 import { usePublicAlerts } from '../alerts/useAlertFeed'
 import { AlertFeedStatus } from '../components/alerts/AlertFeedStatus'
-import { ResearchReplayPanel } from '../components/research/ResearchReplayPanel'
+import { SyntheticReplayPanel } from '../components/research/SyntheticReplayPanel'
 
 interface DashboardLocationState {
   accessDenied?: string
@@ -40,7 +40,7 @@ export function DashboardPage() {
         <Link className="button button--primary" to="/alerts">View community alerts</Link>
       </section>
 
-      <ResearchReplayPanel />
+      <SyntheticReplayPanel />
 
       <section className="identity-grid" aria-label="Account summary">
         <article className="summary-card summary-card--primary">

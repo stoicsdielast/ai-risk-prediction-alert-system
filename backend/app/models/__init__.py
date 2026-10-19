@@ -4,8 +4,10 @@ from app.models.prediction import Prediction
 from app.models.research_prediction import ResearchPrediction
 from app.models.risk import RiskLevel
 from app.models.user import AccountStatus, User, UserRole
+from app.models.synthetic import SyntheticDataset, SyntheticObservation, SyntheticPrediction, SyntheticAlert
 
 __all__ = [
     "AccountStatus", "Alert", "AlertSource", "AlertStatus", "Division", "Location",
     "Prediction", "ResearchPrediction", "RiskLevel", "User", "UserRole",
+    "SyntheticDataset", "SyntheticObservation", "SyntheticPrediction", "SyntheticAlert",
 ]

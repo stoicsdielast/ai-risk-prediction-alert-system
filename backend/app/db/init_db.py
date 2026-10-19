@@ -7,7 +7,7 @@ from app.db.session import get_engine
 def create_tables() -> None:
     with get_engine().begin() as connection:
         upgrade_location_schema(connection)
-        Base.metadata.create_all(bind=connection)
+        Base.metadata.create_all(bind=connection, tables=[t for t in Base.metadata.sorted_tables if not t.name.startswith("synthetic_")])
 
 
 if __name__ == "__main__":
