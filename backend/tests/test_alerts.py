@@ -1,6 +1,6 @@
 """Alert lifecycle tests use explicitly labelled fixtures, never operational predictions."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from itertools import count
 
 import pytest
@@ -347,7 +347,7 @@ def test_admin_approval_persists_audit_and_exposes_safe_public_response(
     assert public.json()[0]["id"] == alert["id"]
     assert set(public.json()[0]) == {
         "id", "is_demo", "location_id", "location", "prediction_id", "prediction", "severity",
-        "status", "source", "message", "created_at", "approved_at",
+        "status", "source", "message", "created_at", "approved_at", "expires_at",
     }
     assert set(public.json()[0]["location"]) == {"id", "name"}
     assert "hashed_password" not in public.text
@@ -575,3 +575,129 @@ def test_public_database_failure_returns_safe_error(client, monkeypatch):
     response = client.get(PUBLIC_URL)
     assert response.status_code == 500
     assert response.json() == {"detail": "Unable to process alert request"}
+
+
+def test_approval_sets_expiry_window_from_configured_ttl(client, admin, location):
+    alert = manual_alert(client, admin, location.id)
+    approved = client.patch(f"{ADMIN_URL}/{alert['id']}/approve", headers=authorization(admin)).json()
+    assert approved["expires_at"].endswith("Z")
+    approved_at = datetime.fromisoformat(approved["approved_at"].replace("Z", "+00:00"))
+    expires_at = datetime.fromisoformat(approved["expires_at"].replace("Z", "+00:00"))
+    assert timedelta(hours=23, minutes=59) <= expires_at - approved_at <= timedelta(hours=24, minutes=1)
+
+
+def test_expired_approved_alert_is_hidden_publicly_but_kept_for_admin(
+    client, admin, location, session_factory,
+):
+    alert = manual_alert(client, admin, location.id)
+    client.patch(f"{ADMIN_URL}/{alert['id']}/approve", headers=authorization(admin))
+    assert len(client.get(PUBLIC_URL).json()) == 1
+    with session_factory() as db:
+        stored = db.get(Alert, alert["id"])
+        stored.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+        db.commit()
+    assert client.get(PUBLIC_URL).json() == []
+    detail = client.get(f"{ADMIN_URL}/{alert['id']}", headers=authorization(admin))
+    assert detail.status_code == 200
+    assert detail.json()["status"] == "APPROVED"
+    assert detail.json()["expires_at"].endswith("Z")
+
+
+def test_repeated_same_severity_event_reuses_active_alert(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    repeated = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert repeated["id"] == created["id"]
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 1
+
+
+def test_severity_escalation_creates_new_alert_during_cooldown(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.VERY_HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    escalated = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert escalated["id"] != created["id"]
+    assert escalated["severity"] == "VERY_HIGH"
+    assert escalated["prediction_id"] == second.id
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 2
+
+
+def test_cooldown_window_allows_new_alert_after_expiry_of_window(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    with session_factory() as db:
+        stored = db.get(Alert, created["id"])
+        stored.created_at = datetime.now(timezone.utc) - timedelta(hours=7)
+        db.commit()
+    fresh = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert fresh["id"] != created["id"]
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 2
+
+
+def test_rejected_alert_does_not_block_a_new_recommendation(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    assert client.patch(f"{ADMIN_URL}/{created['id']}/reject", headers=authorization(admin)).status_code == 200
+    fresh = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert fresh["id"] != created["id"]
+    assert fresh["status"] == "PENDING"
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 2
+
+
+def test_suppressed_alert_blocks_non_escalating_recommendation(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    assert client.patch(f"{ADMIN_URL}/{created['id']}/suppress", headers=authorization(admin), json={
+        "reason": "Test-only withdrawal",
+    }).status_code == 200
+    repeated = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert repeated["id"] == created["id"]
+    assert repeated["status"] == "SUPPRESSED"
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 1
+
+
+def test_expired_alert_does_not_block_a_new_recommendation(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    client.patch(f"{ADMIN_URL}/{created['id']}/approve", headers=authorization(admin))
+    with session_factory() as db:
+        stored = db.get(Alert, created["id"])
+        stored.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+        db.commit()
+    fresh = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert fresh["id"] != created["id"]
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 2
+
+
+def test_manual_alert_is_not_blocked_by_ai_cooldown(
+    client, admin, prediction_factory, session_factory,
+):
+    prediction = prediction_factory(risk=RiskLevel.HIGH)
+    client.post(f"{ADMIN_URL}/from-prediction/{prediction.id}", headers=authorization(admin))
+    manual = manual_alert(client, admin, prediction.location_id)
+    assert manual["status"] == "PENDING"
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 2

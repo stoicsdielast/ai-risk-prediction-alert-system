@@ -84,6 +84,7 @@ class Alert(Base):
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     approved_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     rejected_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
     rejected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     suppression_reason: Mapped[str | None] = mapped_column(String(1000))

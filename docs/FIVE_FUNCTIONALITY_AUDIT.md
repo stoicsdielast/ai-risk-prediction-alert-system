@@ -13,7 +13,7 @@ limitations still apply.
 | 2 Weather management | Backend storage, authorized ingestion, latest/history, source separation and configurable worker implemented; actual PostgreSQL verified; external provider not configured |
 | 3 AI prediction | COMPLETE for the bounded V1 research workflow: persisted weather → 56-feature builder → unchanged trained pipeline → persisted synthetic prediction → optional PENDING demo alert. Genuine operational Fiji forecasts remain BLOCKED |
 | 4 Flood mapping | COMPLETE for the F4 scope: all 12 DB locations mapped with live predictions/weather/approved alerts, division grouping/filtering, prediction-provenance and stale labels, tile-failure and feed-error states, and a MET-admin location create/update/deactivation API. Deferred: a single joined risk feed (`P1-2`) — the map consumes the separate weather and alert endpoints by design |
-| 5 Alerts/testing | Existing operational lifecycle preserved; automatic isolated synthetic handoff now verified; operational model handoff, expiry/cooldown remain pending |
+| 5 Alerts/testing | Existing operational lifecycle preserved; automatic isolated synthetic handoff now verified; expiry/cooldown now implemented; operational model handoff pending |
 
 Evidence: `app/services/v1_features.py`, `v1_model.py`, `prediction_generation.py`,
 `synthetic_alert_service.py`, `app/api/routes/predictions.py` and
@@ -140,9 +140,11 @@ The strongest area. Status machine (PENDING → APPROVED/REJECTED/SUPPRESSED,
 APPROVED → SUPPRESSED), MET-admin-only transitions with row locks, idempotent retry via
 `uq_alert_location_prediction`, flush-only transactional helper, audit columns with DB
 check constraints, approval-before-notification ordering, public schema leak tests, and
-the full admin/public frontend flows are all implemented and covered by ~74 backend and
-~42 frontend alert test cases. Missing: expiry and cooldown (documented as P1),
-any production caller of the prediction→alert handoff, browser push/service-worker
+the full admin/public frontend flows are all implemented and covered by 83 backend and
+~42 frontend alert test cases. Expiry (configurable TTL stamped on approval, expired
+rows hidden publicly) and the repeated-event cooldown/escalation policy are now
+implemented (P1-3). Missing: any production caller of the prediction→alert handoff,
+browser push/service-worker
 delivery, and per-user saved-location subscriptions (absent entirely). Browser
 Notification API with opt-in permission, dedup and multi-tab locking **is** present and
 tested.
@@ -226,8 +228,8 @@ exactly one revision (synthetic demo tables). Any weather table must be added th
 | RI-02 | Helper called from a production prediction flow | **M** | Callers: demo fixture, admin retry, tests only (see AI-02) |
 | RI-02 | Retry idempotency / no revival | **C** | `uq_alert_location_prediction` (`models/alert.py:34`); reuse logic `alert_service.py:154-179`; tests `:204-225,254-267` |
 | RI-02 | Approval-only publication, atomic rollback | **C** | Public filter `alert_service.py:308`; hook after commit `:264-269`; tests `:125,279,323-358,550-577` |
-| RI-02 | Expiry policy | **M** | No `expires_at` column (`models/alert.py:64-91`); documented as manual suppression (`ALERT_SYSTEM.md:82`); ticket marks it P1 |
-| RI-02 | Cooldown / escalation policy | **M** | No cooldown code anywhere in `backend/app` |
+| RI-02 | Expiry policy | **C** | `expires_at` stamped on approval from `ALERT_TTL_HOURS` (default 24 h); public feed excludes expired rows while admin history keeps the `APPROVED` record (`alert_service.py` approval/public filters, migration `20261022_alert_expiry`); tests `test_approval_sets_expiry_window_from_configured_ttl`, `test_expired_approved_alert_is_hidden_publicly_but_kept_for_admin` |
+| RI-02 | Cooldown / escalation policy | **C** | `ALERT_COOLDOWN_HOURS` (default 6 h) coalesces automatic recommendations per location; strictly higher severity escalates, `REJECTED` does not block, manual drafts bypass, sample/demo bypass (`_recent_location_alert`); tests for reuse, escalation, window, rejection, suppression, expiry and manual bypass |
 | RI-02 | Audit fields | **C** (columns) / **M** (log table) | Full reviewer/timestamp/reason columns with DB check constraints (`models/alert.py:48-60`); no separate audit-history table |
 | RI-02 | No notification before approval commit | **C** | Hook ordering test `test_alerts.py:550-568`; separate-session visibility `:323-343` |
 | AT-03 | Admin UI on real APIs (list/create/edit/approve/reject/suppress) | **C** | `api/alerts.ts:25-68`, `AlertsDashboardPage.tsx:64-342`; suppression reason required; 409 → refresh; session-expiry logout; 15 test cases |

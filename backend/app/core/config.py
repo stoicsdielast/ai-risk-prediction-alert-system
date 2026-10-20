@@ -28,6 +28,12 @@ class Settings(BaseSettings):
         default=BACKEND_DIR.parent / "ml" / "artifacts", validation_alias="RESEARCH_MODEL_DIR",
     )
     alert_demo_enabled: bool = Field(default=False, validation_alias="ALERT_DEMO_ENABLED")
+    alert_ttl_hours: int = Field(
+        default=24, ge=1, le=720, validation_alias="ALERT_TTL_HOURS",
+    )
+    alert_cooldown_hours: int = Field(
+        default=6, ge=0, le=720, validation_alias="ALERT_COOLDOWN_HOURS",
+    )
     database_url: str = Field(validation_alias="DATABASE_URL")
     jwt_secret_key: SecretStr = Field(
         min_length=32,

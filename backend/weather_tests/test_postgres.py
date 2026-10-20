@@ -42,6 +42,10 @@ def postgres(monkeypatch):
         tables = [table for table in Base.metadata.sorted_tables
                   if not table.name.startswith(("synthetic_", "weather_", "demo_weather_", "v1_weather_", "generated_prediction_"))]
         Base.metadata.create_all(engine, tables=tables)
+        # create_all builds operational tables at their current shape, so remove
+        # columns added by later ordered migrations before replaying them.
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE alerts DROP COLUMN expires_at"))
         monkeypatch.setattr(sessions, "get_engine", lambda: engine)
         command.upgrade(Config("alembic.ini"), "head")
         factory = sessionmaker(engine, expire_on_commit=False)

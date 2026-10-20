@@ -93,8 +93,9 @@ class AlertResponse(BaseModel):
     message: str
     created_at: datetime
     approved_at: datetime | None
+    expires_at: datetime | None
 
-    @field_validator("created_at", "approved_at")
+    @field_validator("created_at", "approved_at", "expires_at")
     @classmethod
     def utc_timestamp(cls, value: datetime | None) -> datetime | None:
         return _utc(value)

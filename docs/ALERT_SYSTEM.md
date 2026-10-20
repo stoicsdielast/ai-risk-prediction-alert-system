@@ -78,10 +78,31 @@ alert without changing its state. Approved alerts cannot be edited in place;
 withdraw them through suppression if necessary.
 
 The public active endpoint returns only `APPROVED` alerts for active locations.
-Pending, rejected, suppressed, and inactive-location records never appear there.
-There is no automatic expiry in this milestone; administrators suppress an alert
-to withdraw it. Internal administrator IDs and suppression reasons are excluded
+Pending, rejected, suppressed, inactive-location, and expired records never appear
+there. Internal administrator IDs and suppression reasons are excluded
 using a separate public response schema.
+
+## Expiry and repeated-event cooldown
+
+Approval stamps `expires_at = approved_at + ALERT_TTL_HOURS` (default 24 hours).
+The public endpoint excludes alerts whose `expires_at` has passed; the row keeps
+its `APPROVED` status and review audit and remains readable by administrators.
+Alerts approved before this feature was introduced have `expires_at = NULL`
+(no automatic expiry) and are grandfathered; suppress them to withdraw them.
+
+Automatic AI recommendations for the same location are coalesced during
+`ALERT_COOLDOWN_HOURS` (default 6 hours, `0` disables the check). If a recent
+alert for the location is `PENDING`, `APPROVED`, or `SUPPRESSED` and is not
+expired, the existing alert is returned instead of creating another one. A
+strictly higher severity escalates and creates a new recommendation. `REJECTED`
+alerts do not block new events, and manual `MET_OFFICIAL` drafts are never
+cooldown-blocked. Demo/sample alerts bypass the cooldown so isolated
+demonstration scenarios stay reproducible.
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `ALERT_TTL_HOURS` | `24` | Lifetime stamped on a newly approved alert |
+| `ALERT_COOLDOWN_HOURS` | `6` | Repeated-event window for automatic recommendations; `0` disables |
 
 ## Endpoints
 
@@ -97,14 +118,14 @@ is required for `/api/alerts/active`.
 | `GET` | `/api/admin/alerts` | Pending list by default; filter with `?status=PENDING`, `APPROVED`, `REJECTED`, or `SUPPRESSED` |
 | `GET` | `/api/admin/alerts/{alert_id}` | Detail including prediction and internal review audit |
 | `PATCH` | `/api/admin/alerts/{alert_id}` | Edit pending `message` and/or `severity` |
-| `PATCH` | `/api/admin/alerts/{alert_id}/approve` | Approve pending alert; record actor/time; invoke development hook after commit |
+| `PATCH` | `/api/admin/alerts/{alert_id}/approve` | Approve pending alert; record actor/time, stamp `expires_at`, invoke development hook after commit |
 | `PATCH` | `/api/admin/alerts/{alert_id}/reject` | Reject pending alert; record actor/time |
 | `PATCH` | `/api/admin/alerts/{alert_id}/suppress` | Suppress pending/approved alert; require `{"reason": "..."}` |
 | `GET` | `/api/alerts/active` | Public approved-alert list with location and relevant prediction fields |
 
 Lists support `offset` (default 0) and `limit` (default 100, maximum 200).
 Public records contain ID, location ID/name, severity, message, source, status,
-creation/approval times, and optional prediction ID/risk/probability/percentage/
+creation/approval/expiry times, and optional prediction ID/risk/probability/percentage/
 model version/prediction time. No user objects, credentials, JWTs, or audit IDs
 are returned publicly. Admin details additionally show location active state.
 
@@ -284,12 +305,12 @@ python -m pytest tests ai/tests -q
 The alert tests use clearly labelled fixtures in isolated SQLite with foreign
 keys enabled and explicit transactions/savepoints. They cover the four risk
 branches, duplicate requests/constraints, atomic rollback, all protected actions,
-ineligible accounts, approval/public visibility, edit validation, historical
+ineligible accounts, approval/public visibility, expiry filtering, the
+repeated-event cooldown and escalation, edit validation, historical
 records, suppression/audits, inactive or mismatched locations, request workflow
 bypass attempts, and safe database/notification errors. Existing authentication
 and standalone AI tests remain separate regression checks.
 
-Still pending: frontend API connection, production location provisioning and
-prediction ingestion, subscription storage, notification delivery/queueing,
-alert expiry policy, and a full edit-history audit system. This prototype has not
-been validated as an operational emergency-warning service.
+Still pending: subscription storage, notification delivery/queueing, and a full
+edit-history audit system. This prototype has not been validated as an
+operational emergency-warning service.

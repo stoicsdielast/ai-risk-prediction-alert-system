@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 from sqlalchemy import and_, or_, select
@@ -22,6 +22,15 @@ from app.services import notification_service
 logger = logging.getLogger(__name__)
 
 HIGH_RISK_LEVELS = frozenset({RiskLevel.HIGH, RiskLevel.VERY_HIGH})
+SEVERITY_RANK = {
+    RiskLevel.LOW: 0,
+    RiskLevel.MODERATE: 1,
+    RiskLevel.HIGH: 2,
+    RiskLevel.VERY_HIGH: 3,
+}
+COOLDOWN_STATUSES = frozenset({
+    AlertStatus.PENDING, AlertStatus.APPROVED, AlertStatus.SUPPRESSED,
+})
 ALLOWED_TRANSITIONS = {
     AlertStatus.PENDING: frozenset({AlertStatus.APPROVED, AlertStatus.REJECTED, AlertStatus.SUPPRESSED}),
     AlertStatus.APPROVED: frozenset({AlertStatus.SUPPRESSED}),
@@ -123,6 +132,22 @@ def _existing_alert(db: Session, prediction: Prediction) -> Alert | None:
     ).execution_options(populate_existing=True))
 
 
+def _recent_location_alert(db: Session, location_id: int) -> Alert | None:
+    """Most recent unexpired alert that should suppress a repeated-event alert."""
+    cooldown_hours = get_settings().alert_cooldown_hours
+    if cooldown_hours <= 0:
+        return None
+    now = datetime.now(timezone.utc)
+    return db.scalar(
+        select(Alert).where(
+            Alert.location_id == location_id,
+            Alert.status.in_(COOLDOWN_STATUSES),
+            Alert.created_at > now - timedelta(hours=cooldown_hours),
+            or_(Alert.expires_at.is_(None), Alert.expires_at > now),
+        ).order_by(Alert.created_at.desc(), Alert.id.desc()).limit(1)
+    )
+
+
 def _duplicate_prediction_alert(error: IntegrityError) -> bool:
     diagnostic = getattr(error.orig, "diag", None)
     if getattr(diagnostic, "constraint_name", None) == "uq_alert_location_prediction":
@@ -161,6 +186,11 @@ def create_alert_from_prediction(db: Session, prediction: Prediction, *, researc
     if existing is not None:
         return existing
     location = _active_location(db, stored.location_id)
+    if not stored.is_sample:
+        # Repeated-event cooldown: reuse the active alert unless severity escalates.
+        recent = _recent_location_alert(db, location.id)
+        if recent is not None and SEVERITY_RANK[stored.risk_level] <= SEVERITY_RANK[recent.severity]:
+            return recent
     alert = Alert(
         location_id=location.id, prediction_id=stored.id,
         severity=stored.risk_level, status=AlertStatus.PENDING,
@@ -267,6 +297,7 @@ def approve_alert(db: Session, alert_id: int, admin: User) -> Alert:
     alert.status = AlertStatus.APPROVED
     alert.approved_by_user_id = admin.id
     alert.approved_at = datetime.now(timezone.utc)
+    alert.expires_at = alert.approved_at + timedelta(hours=get_settings().alert_ttl_hours)
     db.commit()
     # This development hook runs only after successful persistence; it sends nothing.
     try:
@@ -311,7 +342,11 @@ def get_public_alerts(db: Session, *, offset: int = 0, limit: int = 100) -> list
         )))
     return list(db.scalars(
         select(Alert).join(Location, Alert.location_id == Location.id)
-        .where(Alert.status == AlertStatus.APPROVED, Location.is_active.is_(True))
+        .where(
+            Alert.status == AlertStatus.APPROVED,
+            Location.is_active.is_(True),
+            or_(Alert.expires_at.is_(None), Alert.expires_at > datetime.now(timezone.utc)),
+        )
         .where(allowed_prediction)
         .order_by(Alert.approved_at.desc(), Alert.id.desc()).offset(offset).limit(limit)
     ))
