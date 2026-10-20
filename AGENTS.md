@@ -5,12 +5,12 @@
 Multi-part student project; not a monorepo with shared tooling. Each part has its own dependencies and commands.
 
 - `frontend/` — React + TypeScript + Vite app (Tailwind 4, Leaflet, react-router)
-- `backend/` — FastAPI app (`backend/app/`), plus a standalone AI package (`backend/ai/`) that does not import app settings or register routes
+- `backend/` — FastAPI app (`backend/app/`), plus a **deprecated** standalone AI package (`backend/ai/`, early India-dataset experiment) that does not import app settings or register routes
 - `ml/` — separate Bangladesh historical research benchmark (own pinned deps, own venv expectations), now also home to `ml/synthetic/`, the approved synthetic Fiji simulator/training pipeline (`docs/SYNTHETIC_METHODOLOGY.md`)
 - `docs/` — guides; root `README.md` links the important ones
-- Root `ai/` and `database/` are empty placeholders; `archive/` holds the Kaggle India CSV used by `backend/ai`
+- Root `ai/` and `database/` are empty placeholders; `archive/` held the Kaggle India CSV used only by the deprecated `backend/ai` experiment and is now intentionally absent
 
-Three AI codebases exist and are not interchangeable: `backend/ai` (India 12-feature pipeline), `ml/` (Bangladesh benchmark), `ml/synthetic` (Fiji simulator). Do not merge their schemas, data, or artifacts.
+The deployed model is the synthetic Fiji CatBoost V1 (`ml/synthetic`); V2/V3 are research-only. `backend/ai` (early India 12-feature experiment, deprecated) and `ml/` (Bangladesh benchmark) are historical and not interchangeable. Do not merge their schemas, data, or artifacts; do not restore the India CSV.
 
 ## Commands (verified)
 

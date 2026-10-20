@@ -1,4 +1,11 @@
-# Standalone flood-occurrence AI milestone
+# Standalone flood-occurrence AI milestone (DEPRECATED)
+
+> **Deprecated: early India-dataset experiment only.** This milestone was an early
+> prototype trained on the Kaggle India CSV and is **not** the deployed model. The
+> current model is the **synthetic Fiji CatBoost V1** pipeline under `ml/synthetic`
+> (V2/V3 retained for research). The India CSV was used solely in early experiments
+> and is intentionally absent from the repository; nothing here should be used for
+> new training, promotion or operational decisions.
 
 For the current **six-input demo weather model**, use the
 [prototype weather training guide](prototype_weather/README.md). Its dataset,
@@ -17,9 +24,12 @@ results do not establish useful flood prediction capability.
 
 ## Dataset and inspection
 
-The original file remains at `archive/flood_risk_dataset_india.csv`, relative to
-the repository root. No copy or move is needed. Its original Kaggle URL and
-collection/synthesis methodology were not supplied and are unverified.
+The original file was `archive/flood_risk_dataset_india.csv`, relative to
+the repository root. **The India CSV is no longer part of this project and is
+absent from the working tree**; it is documented here only as an early experiment.
+Its original Kaggle URL and collection/synthesis methodology were not supplied and
+are unverified. The tests no longer read it (`ai/tests/test_pipeline.py` now uses
+in-memory fixtures only).
 
 The inspected file contains **10,000 rows and 14 columns**, no missing values,
 no duplicate rows, and no repeated rows of the retained feature set.

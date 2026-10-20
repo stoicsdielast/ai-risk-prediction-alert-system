@@ -1,4 +1,12 @@
-"""Paths and reproducible prototype configuration (no backend settings needed)."""
+"""DEPRECATED: early India-dataset experiment; not used for the deployed model.
+
+This standalone 12-feature pipeline was an early prototype trained on the Kaggle
+India CSV (``DEFAULT_DATASET`` below). It is retained only for historical
+reference. The project now trains and serves the synthetic Fiji model
+(``ml/synthetic``, CatBoost V1) with V2/V3 kept for research; do not use this
+module's dataset, schema or artifacts for new work. The India CSV is intentionally
+absent from the repository. No backend settings are required to import this file.
+"""
 
 from pathlib import Path
 

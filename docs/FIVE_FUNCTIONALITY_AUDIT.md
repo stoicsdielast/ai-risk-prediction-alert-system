@@ -75,10 +75,12 @@ multiple and duplicate subscriptions, concurrent PUT/approve/claim on real Postg
 retry without duplicate records, suppression/expiry/unsubscribe/opt-out/inactive-location
 after claim, approval rollback on enqueue failure, synthetic alerts never enqueue,
 browser consent (never prompted by delivery code). Results: backend `tests` 256 passed /
-9 skipped, `ai/tests` 126 passed (excluding `test_pipeline.py`, whose dataset
-`archive/flood_risk_dataset_india.csv` is absent from the working tree), PostgreSQL
-6 passed, frontend 109 passed, lint and build clean. Not claimed: background Web Push,
-service worker, WebSocket, SMS/email.
+9 skipped, `ai/tests` 142 passed, PostgreSQL 6 passed, frontend 109 passed, lint and
+build clean. Not claimed: background Web Push, service worker, WebSocket, SMS/email.
+
+The legacy India-dataset pipeline under `backend/ai` is **deprecated**: it was an early
+experiment only and the Kaggle India CSV is intentionally absent. Its CSV-dependent tests
+were retired and replaced with in-memory fixtures; no current test reads the India dataset.
 
 ### Remaining F5 gaps (Task 3, 20 October 2026)
 
