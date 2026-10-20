@@ -14,7 +14,7 @@
   flex-direction: column;
   padding: 1.35rem 1rem 1rem;
   color: #fff;
-  background: #2d3055;
+  background: var(--brand-navy);
   box-shadow: 12px 0 32px rgba(31, 34, 67, 0.12);
 }
 
@@ -118,8 +118,8 @@
   flex: 0 0 auto;
   place-items: center;
   border-radius: 0.7rem;
-  color: #2d3055;
-  background: #dfe8ff;
+  color: var(--brand-navy);
+  background: var(--brand-navy-wash);
   font-size: 0.76rem;
   font-weight: 850;
 }
@@ -194,10 +194,9 @@
   align-items: center;
   padding: 0 2rem;
   border-bottom: 1px solid #e5e8f0;
-  color: #697286;
-  background: rgba(255, 255, 255, 0.86);
+  color: var(--text-muted);
+  background: var(--surface);
   font-size: 0.67rem;
-  backdrop-filter: blur(14px);
 }
 
 .workspace-mobile-bar {
@@ -561,7 +560,7 @@
 }
 
 .panel-link:hover {
-  color: #2d3055;
+  color: var(--brand-navy);
 }
 
 /* Admin dashboard -------------------------------------------------------- */
@@ -655,10 +654,10 @@
   gap: 1rem;
   align-items: center;
   padding: 1.15rem;
-  border: 1px solid #d7daec;
-  border-radius: 1rem;
-  background: linear-gradient(105deg, #f4f4ff 0%, #fff 72%);
-  box-shadow: 0 9px 30px rgba(42, 46, 82, 0.04);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
 
 .quick-action-panel__icon {
@@ -959,10 +958,9 @@
   bottom: 0.75rem;
   padding: 0.65rem;
   border: 1px solid rgba(62, 67, 101, 0.1);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 5px 20px rgba(39, 43, 69, 0.14);
-  backdrop-filter: blur(10px);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
 
 .weather-map-tile-notice {
@@ -1236,7 +1234,7 @@
   height: 100%;
   display: block;
   border-radius: inherit;
-  background: linear-gradient(90deg, #6369ae, #8389cc);
+  background: linear-gradient(90deg, var(--chart-1), var(--chart-2));
 }
 
 .official-warning-panel {
@@ -1609,9 +1607,8 @@
     gap: 0.85rem;
     align-items: center;
     padding: 0 1rem;
-    border-bottom: 1px solid #e2e5ed;
-    background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
   }
 
   .workspace-mobile-bar > button {
@@ -1621,8 +1618,8 @@
     place-content: center;
     gap: 0.22rem;
     border-radius: 0.6rem;
-    color: #2d3055;
-    background: #eef0f6;
+    color: var(--brand-navy);
+    background: var(--surface-muted);
     cursor: pointer;
   }
 
@@ -1634,7 +1631,7 @@
   }
 
   .workspace-mobile-bar > strong {
-    color: #2d3055;
+    color: var(--brand-navy);
     font-size: 0.76rem;
   }
 

@@ -2,28 +2,30 @@
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  color: #182b35;
-  background: #f3f7f6;
+  color: #22263f;
+  background: #f7f8fb;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --ink: #182b35;
-  --muted: #60747c;
-  --soft: #87989e;
-  --line: #dce7e5;
+  /* Legacy names kept so existing component CSS keeps working; values follow the Fiji MET palette. */
+  --ink: #22263f;
+  --muted: #73788c;
+  --soft: #8a8fa3;
+  --line: #e4e7ef;
   --paper: #ffffff;
-  --wash: #f3f7f6;
-  --navy: #082f3d;
-  --ocean: #087f78;
-  --ocean-dark: #05635f;
-  --mint: #d9f1ec;
-  --lime: #b7dc74;
+  --wash: #f7f8fb;
+  --navy: #2d3055;
+  --ocean: #4a6fa5;
+  --ocean-dark: #3a5a8a;
+  --mint: #edf1fa;
+  --lime: #c7d2e6;
   --danger: #b44545;
   --danger-wash: #fff0ef;
   --success: #17775d;
   /* Fiji MET shared tokens. Component CSS should read these, not literal colours. */
   --brand-navy: #2d3055;
   --brand-navy-deep: #242746;
+  --brand-navy-wash: #dfe8ff;
   --brand-blue: #4a6fa5;
   --surface: #ffffff;
   --surface-muted: #f7f8fb;
@@ -55,8 +57,8 @@
   --chart-4: #4f6d7a;
   --chart-5: #8a7f9c;
   --chart-6: #5b7f95;
-  --shadow-sm: 0 1px 2px rgba(8, 47, 61, 0.05);
-  --shadow-md: 0 18px 50px rgba(8, 47, 61, 0.1);
+  --shadow-sm: 0 1px 2px rgba(45, 48, 85, 0.06);
+  --shadow-md: 0 18px 50px rgba(45, 48, 85, 0.1);
 }
 
 * {

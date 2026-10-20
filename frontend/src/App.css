@@ -142,9 +142,7 @@
   flex-direction: column;
   padding: clamp(2rem, 4vw, 4.5rem);
   color: #fff;
-  background:
-    radial-gradient(circle at 82% 18%, rgba(87, 184, 170, 0.28), transparent 30%),
-    linear-gradient(145deg, #062e3b 0%, #074654 48%, #086f68 100%);
+  background: linear-gradient(160deg, var(--brand-navy-deep) 0%, var(--brand-navy) 100%);
 }
 
 .auth-story::before {
@@ -173,7 +171,7 @@
   height: 12rem;
   right: 4%;
   top: 18%;
-  background: rgba(145, 221, 209, 0.08);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .auth-story__glow--two {
@@ -181,7 +179,7 @@
   height: 7rem;
   left: -2rem;
   bottom: 14%;
-  background: rgba(183, 220, 116, 0.08);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .auth-story__content {
@@ -215,10 +213,9 @@
   align-items: center;
   margin-top: 3.2rem;
   padding: 0.9rem 1.1rem;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .story-proof__icon {
@@ -273,9 +270,9 @@
   display: flex;
   flex-direction: column;
   background:
-    linear-gradient(rgba(8, 47, 61, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(8, 47, 61, 0.018) 1px, transparent 1px),
-    #fbfdfc;
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px),
+    var(--surface-muted);
   background-size: 28px 28px;
 }
 
@@ -705,8 +702,7 @@
   z-index: 20;
   top: 0;
   border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(18px);
+  background: var(--surface);
 }
 
 .app-header__inner {
@@ -884,7 +880,7 @@
 .summary-card--primary {
   color: #fff;
   border-color: transparent;
-  background: linear-gradient(135deg, var(--navy), #0b645f);
+  background: linear-gradient(135deg, var(--brand-navy), var(--brand-navy-deep));
 }
 
 .summary-card__label {
@@ -930,9 +926,9 @@
   gap: 1.2rem;
   align-items: center;
   padding: 1.35rem;
-  border: 1px solid #bcded7;
-  border-radius: 0.95rem;
-  background: linear-gradient(90deg, #edf9f6, #f8fcfb);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-muted);
 }
 
 .admin-callout__mark {
