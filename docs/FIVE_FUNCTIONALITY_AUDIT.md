@@ -43,9 +43,10 @@ writes, reactivation restores it, 2100 stored synthetic weather rows read back a
 ### Operational prediction-chain verification (Task 2, 20 October 2026)
 
 Verified against the real V1 artifacts (`ml/artifacts/synthetic/v1`) and the
-simulated historical dataset; eight `tests/test_v1_generation.py` tests ran (none
+simulated historical dataset; nine `tests/test_v1_generation.py` tests ran (none
 skipped) and two `weather_tests/test_generation_postgres.py` tests passed on real
-PostgreSQL.
+PostgreSQL. The ninth test approves a synthetic alert and proves the operational
+`alerts` table and `/api/alerts/active` stay untouched.
 
 | Stage | Status | Evidence |
 | --- | --- | --- |

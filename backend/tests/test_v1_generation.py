@@ -187,3 +187,31 @@ def test_model_checksum_failure(tmp_path, actual_model):
     (tmp_path / "selected_model.joblib").write_bytes(b"corrupted-bundle")
     with pytest.raises(V1ModelUnavailable):
         load_v1_model(str(tmp_path))
+
+
+def test_synthetic_approval_never_reaches_operational_public_feed(client, db, generated_setup, actual_model):
+    from app.models import Alert
+    saved = pd.read_parquet(ARTIFACTS / "features.parquet", filters=[
+        ("timestamp", ">=", pd.Timestamp("2024-07-01", tz="UTC")),
+        ("timestamp", "<", pd.Timestamp("2024-08-01", tz="UTC"))],
+        columns=["timestamp", "location_id", *actual_model.features])
+    probabilities = actual_model.bundle["model"].predict_proba(saved[actual_model.features])[:, 1]
+    eligible = np.flatnonzero(probabilities >= actual_model.bundle["threshold"])
+    assert len(eligible) > 0, "V1 dataset must contain an eligible HIGH/VERY_HIGH window"
+    row = saved.iloc[eligible[0]]
+    timestamp, location_id = pd.Timestamp(row.timestamp), int(row.location_id)
+    import_window(db, DATASET, timestamp, SOURCE)
+    body = client.post("/api/predictions/generate",
+                       json=request(location_id, timestamp=timestamp.isoformat()), headers=generated_setup).json()
+    assert body["status"] == "OK", body
+    assert body["alert_id"] is not None and body["alert_status"] == "PENDING"
+    approved = client.post(f"/api/synthetic/admin/alerts/{body['alert_id']}/approve", headers=generated_setup)
+    assert approved.status_code == 200, approved.text
+    assert approved.json()["status"] == "APPROVED"
+    assert approved.json()["source_type"] == "synthetic"
+    # The isolated approval keeps the operational alert table and public feed untouched.
+    assert db.scalar(select(func.count()).select_from(SyntheticAlert)) == 1
+    assert db.scalar(select(func.count()).select_from(Alert)) == 0
+    db.commit()
+    assert client.get("/api/alerts/active").json() == []
+    assert client.get("/api/synthetic/alerts").json()[0]["source_type"] == "synthetic"
