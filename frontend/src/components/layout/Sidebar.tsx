@@ -78,6 +78,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           )}
 
           {isAdmin && (
+            <NavLink to="/admin/analytics" onClick={onClose}>
+              <SidebarIcon name="analytics" />
+              <span>Prediction analytics</span>
+            </NavLink>
+          )}
+
+          {isAdmin && (
+            <NavLink to="/admin/model-performance" onClick={onClose}>
+              <SidebarIcon name="model" />
+              <span>Model performance</span>
+            </NavLink>
+          )}
+
+          {isAdmin && (
             <NavLink to="/admin/users/pending" onClick={onClose}>
               <SidebarIcon name="users" />
               <span>Users / Admin</span>

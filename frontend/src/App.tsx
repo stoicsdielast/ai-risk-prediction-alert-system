@@ -1,7 +1,9 @@
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import './App.css'
 import './public-auth.css'
 import './prototype.css'
+import './analytics.css'
 import { PublicOnlyRoute, RequireAdmin, RequireAuth } from './auth/RouteGuards'
 import { AuthLayout } from './components/AuthLayout'
 import { WorkspaceLayout } from './components/layout/WorkspaceLayout'
@@ -18,6 +20,12 @@ import { WeatherMapPage } from './pages/WeatherMapPage'
 import { WelcomePage } from './pages/WelcomePage'
 import { SyntheticReplay } from './components/research/SyntheticReplayPanel'
 import { SyntheticResearchPage } from './pages/SyntheticResearchPage'
+
+// Charts pull in Recharts, so the analytics pages load on demand rather than in the main bundle.
+const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage').then((m) => ({ default: m.AdminAnalyticsPage })))
+const AdminModelPerformancePage = lazy(() =>
+  import('./pages/AdminModelPerformancePage').then((m) => ({ default: m.AdminModelPerformancePage })))
+const lazyPage = (page: React.ReactNode) => <Suspense fallback={<p role="status">Loading…</p>}>{page}</Suspense>
 
 function App() {
   return (
@@ -45,6 +53,8 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route element={<RequireAdmin />}>
             <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="admin/analytics" element={lazyPage(<AdminAnalyticsPage />)} />
+            <Route path="admin/model-performance" element={lazyPage(<AdminModelPerformancePage />)} />
             <Route path="admin/alerts" element={<AlertsDashboardPage />} />
             <Route path="admin/users/pending" element={<AdminUsersPage />} />
           </Route>

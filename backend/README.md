@@ -431,6 +431,33 @@ returns `404`. Attempting to transition an already approved or rejected user
 returns `409` with a controlled message. Every response uses `UserResponse`, so
 password hashes are never returned.
 
+## MET admin analytics APIs
+
+Read-only analytics for an approved `MET_ADMIN`; no route writes to the
+database, generates a prediction, retrains or promotes a model.
+
+```bash
+# Summary counts, risk bands and model provenance for the last 30 days (days 1..365)
+curl "http://127.0.0.1:8000/api/admin/analytics/predictions/overview?days=30" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+
+# Stored-probability series per location; source is operational or synthetic
+curl "http://127.0.0.1:8000/api/admin/analytics/predictions/trend?days=7&source=operational&location_id=1&location_id=2" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+
+# Parsed saved research artifacts (V1/V2/V3) and the deployed model metadata
+curl "http://127.0.0.1:8000/api/admin/analytics/models/performance" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+```
+
+Operational `predictions` (genuine and sample) and `synthetic_predictions` are
+reported separately and never merged. An unknown `location_id` returns `404`; an
+out-of-range `days` returns `422`. `models/performance` reads
+`RESEARCH_RUNS_DIR` (default `ml/runs`) and returns `available: false` with a
+reason for any run whose artifacts are absent, so the endpoint degrades honestly
+rather than inventing numbers. The frontend surfaces these at `/admin/analytics`
+and `/admin/model-performance`.
+
 ## Bootstrap the first MET admin for development
 
 There is intentionally no public endpoint that creates or automatically

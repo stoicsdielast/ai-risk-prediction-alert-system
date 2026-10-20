@@ -82,6 +82,31 @@ The legacy India-dataset pipeline under `backend/ai` is **deprecated**: it was a
 experiment only and the Kaggle India CSV is intentionally absent. Its CSV-dependent tests
 were retired and replaced with in-memory fixtures; no current test reads the India dataset.
 
+### MET-admin prediction analytics and model performance (verified)
+
+Implemented as read-only MET-admin analytics: `GET /api/admin/analytics/predictions/overview`,
+`.../predictions/trend` and `.../models/performance` (`app/api/routes/analytics.py`,
+`app/services/analytics_service.py`), and the frontend pages `/admin/analytics` and
+`/admin/model-performance`. Every figure is derived from stored rows or saved
+artifacts; nothing is generated, interpolated or smoothed for display. Operational
+`predictions` (genuine / sample) and `synthetic_predictions` are always reported
+separately and never merged into one total or series (sample fixtures are labelled and
+carry no claimed horizon). Trend values are copied verbatim, so gaps stay gaps; synthetic
+windows are anchored to the latest synthetic record (simulated time) with the anchor and
+its kind reported. Model performance parses the saved run artifacts under
+`RESEARCH_RUNS_DIR` (default `ml/runs`) and degrades to `available: false` with a reason
+when they are absent; a confusion matrix is only drawn when its cells reproduce the
+artifact's own row/positive counts, and V1/V2/V3 (all different datasets, partitions and
+thresholds) are shown side by side with an explicit instruction not to rank them. The
+deployed model and threshold are reported from `model_metadata.json`; no retraining,
+promotion, prediction generation or database write occurs. Time-range pills disable any
+range wider than the stored history (with a reason) instead of implying more data exists.
+Verified: backend `tests` + `ai/tests` 413 passed / 9 skipped, `ml/tests` 46 passed /
+1 skipped, PostgreSQL `weather_tests` 6 passed, frontend 155 passed, oxlint clean,
+`tsc -b && vite build` passed. Browser-verified against the real dev database (sidebar
+colour `rgb(45, 48, 85)`, chart rendered with no console errors, operational 24 h/7 d
+enabled and 30 d correctly disabled, synthetic ranges disabled with an explicit reason).
+
 ### Remaining F5 gaps (Task 3, 20 October 2026)
 
 - **Saved-location subscriptions — IMPLEMENTED (see F5 checklist).** Formerly: No model/table/route/UI. The public

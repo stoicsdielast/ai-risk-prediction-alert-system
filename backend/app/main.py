@@ -12,6 +12,7 @@ from app.api.routes.synthetic import router as synthetic_router
 from app.api.routes.synthetic_research import router as synthetic_research_router
 from app.api.routes.weather import router as weather_router
 from app.api.routes.notifications import router as notifications_router
+from app.api.routes.analytics import router as analytics_router
 
 app = FastAPI(
     title="Fiji Flood Risk API",
@@ -43,6 +44,7 @@ app.include_router(synthetic_router)
 app.include_router(synthetic_research_router)
 app.include_router(weather_router)
 app.include_router(notifications_router)
+app.include_router(analytics_router)
 
 
 @app.get("/")

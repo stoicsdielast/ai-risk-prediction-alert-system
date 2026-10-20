@@ -17,6 +17,7 @@ AI-powered flood risk prediction system designed for Fiji.
 - [Frontend setup and usage](frontend/README.md)
 - [Backend setup and API usage](backend/README.md)
 - [Alert System: lifecycle, endpoints, setup, and lecturer demonstration](docs/ALERT_SYSTEM.md)
+- [MET-admin prediction analytics and model performance](backend/README.md#met-admin-analytics-apis)
 
 ## Project Modules
 
