@@ -10,6 +10,7 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    browser_delivery_enabled: bool = False
     weather_freshness_minutes: int = Field(default=180, ge=1, le=10080)
     weather_ingestion_enabled: bool = False
     weather_feed_url: str | None = None

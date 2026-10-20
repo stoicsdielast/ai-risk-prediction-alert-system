@@ -40,7 +40,7 @@ def postgres(monkeypatch):
     try:
         # Existing operational baseline is create_all; both versioned migrations are real.
         tables = [table for table in Base.metadata.sorted_tables
-                  if not table.name.startswith(("synthetic_", "weather_", "demo_weather_", "v1_weather_", "generated_prediction_"))]
+                  if not table.name.startswith(("synthetic_", "weather_", "demo_weather_", "v1_weather_", "generated_prediction_", "notification_", "saved_locations"))]
         Base.metadata.create_all(engine, tables=tables)
         # create_all builds operational tables at their current shape, so remove
         # columns added by later ordered migrations before replaying them.

@@ -54,6 +54,8 @@ export function installAlertApi(initial: AdminAlert[] = [sampleAlert()]) {
       return json({ detail: failure.detail }, failure.status)
     }
     if (url.pathname === '/api/auth/me') return json(state.user)
+    if (url.pathname === '/api/me/notification-preferences') return json({ browser_enabled: false, delivery_enabled: false })
+    if (url.pathname === '/api/me/subscriptions' || url.pathname === '/api/me/notifications') return json([])
     if (url.pathname === '/api/locations')
       return json([
         {

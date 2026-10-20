@@ -55,7 +55,7 @@ flowchart TD
     Review -->|Approve| Approved[APPROVED public alert]
     Review -->|Reject| Rejected[REJECTED, administrator history only]
     Review -->|Suppress with reason| Suppressed[SUPPRESSED, administrator history only]
-    Approved --> Hook[Development notification hook: no delivery]
+    Approved --> Hook[Outbox enqueue for opted-in subscribers + logging hook]
     Approved -->|Suppress with reason| Suppressed
 ```
 
@@ -123,7 +123,7 @@ is required for `/api/alerts/active`.
 | `GET` | `/api/admin/alerts` | Pending list by default; filter with `?status=PENDING`, `APPROVED`, `REJECTED`, or `SUPPRESSED` |
 | `GET` | `/api/admin/alerts/{alert_id}` | Detail including prediction and internal review audit |
 | `PATCH` | `/api/admin/alerts/{alert_id}` | Edit pending `message` and/or `severity` |
-| `PATCH` | `/api/admin/alerts/{alert_id}/approve` | Approve pending alert; record actor/time, stamp `expires_at`, invoke development hook after commit |
+| `PATCH` | `/api/admin/alerts/{alert_id}/approve` | Approve pending alert; record actor/time, stamp `expires_at`, enqueue outbox rows in the same transaction, then invoke logging hook after commit |
 | `PATCH` | `/api/admin/alerts/{alert_id}/reject` | Reject pending alert; record actor/time |
 | `PATCH` | `/api/admin/alerts/{alert_id}/suppress` | Suppress pending/approved alert; require `{"reason": "..."}` |
 | `GET` | `/api/alerts/active` | Public approved-alert list with location and relevant prediction fields |
@@ -196,13 +196,47 @@ handles duplicate insertion races. PostgreSQL row locks serialize requests for
 the same prediction and conflicting alert transitions. Manual/action services
 commit their own API transactions, following existing service conventions.
 
-Approval commits before calling
-`notification_service.notify_users_for_approved_alert(alert)`. The stub logs
-that the hook was invoked and explicitly says no provider/subscription service
-is configured. It does not send or queue SMS, email, or push notifications.
-Hook failure is logged and does not undo saved approval. This hook is not a
-durable delivery/outbox mechanism; durable scheduling, subscriptions, retries,
-and provider integration remain future work.
+Approval enqueues notifications inside the same transaction that marks the alert
+`APPROVED` (`services/notification_outbox.py`), then commits, then calls the logging
+hook `notification_service.notify_users_for_approved_alert(alert)`. The hook sends
+nothing; hook failure is logged and does not undo the saved approval. If enqueueing
+fails, the whole approval rolls back (`test_outbox_failure_rolls_back_approval`).
+
+## Saved locations and the notification outbox
+
+Authenticated users (any approved, active account) manage their own data under
+`/api/me/*`; the owner always comes from the JWT, never from a request field.
+
+| Method | Endpoint | Behaviour |
+| --- | --- | --- |
+| `GET` | `/api/me/subscriptions` | Own saved locations |
+| `PUT` / `DELETE` | `/api/me/subscriptions/{location_id}` | Idempotent save/remove; inactive or unknown locations rejected; removal cancels unsent notifications for that location |
+| `GET` / `PUT` | `/api/me/notification-preferences` | Browser opt-in flag (default off) and the operator gate `BROWSER_DELIVERY_ENABLED`; opting out cancels unsent notifications |
+| `GET` | `/api/me/notifications` | Own history; `?pending=true` returns only deliverable rows |
+| `GET` | `/api/me/notifications/{id}/attempts` | Per-attempt timestamps, outcome and error |
+| `POST` | `.../{id}/claim`, `.../check`, `.../receipt` | Leased delivery protocol described below |
+
+Tables: `saved_locations` (composite key user/location), `notification_preferences`,
+`notification_outbox` (unique `user_id, alert_id`; status `PENDING`/`DELIVERED`/
+`FAILED`/`CANCELLED`) and `notification_attempts`.
+
+Only approved, unexpired operational alerts at active locations enqueue, and only
+for users who are approved, active, opted in and subscribed to that location.
+`synthetic_alerts` never reach the outbox. Delivery is claim-based: `claim` takes a
+90-second lease and increments `attempts`; the page rechecks eligibility with
+`check` immediately before showing a browser notification (so a suppression or
+expiry after claim blocks display, REQ 48); `receipt` records `DELIVERED` or
+`FAILED`. A failed attempt backs off (30 s doubling, capped at 15 min) and the same
+record is retried, up to 5 attempts, so no duplicate rows are created. An abandoned
+lease is recorded as a failed attempt on the next claim. The client also keeps a
+local per-account receipt so a lost acknowledgement does not re-display a message.
+
+Limitations: this is an open-browser feature. There is no service worker, Web Push,
+WebSocket, SMS or email; notifications appear only while the dashboard is open and
+the browser grants permission. `BROWSER_DELIVERY_ENABLED` defaults to `false`. A
+browser crash between display and receipt can cause one repeat display. Notification
+history is not purged, and the 2-minute SRS target (REQ 46) depends on the 30-second
+client poll while a tab is open.
 
 ## Setup and lecturer demonstration
 
@@ -316,6 +350,6 @@ records, suppression/audits, inactive or mismatched locations, request workflow
 bypass attempts, and safe database/notification errors. Existing authentication
 and standalone AI tests remain separate regression checks.
 
-Still pending: subscription storage, notification delivery/queueing, and a full
+Still pending: background Web Push/service worker, SMS/email, and a full
 edit-history audit system. This prototype has not been validated as an
 operational emergency-warning service.

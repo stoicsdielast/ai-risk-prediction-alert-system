@@ -298,6 +298,8 @@ def approve_alert(db: Session, alert_id: int, admin: User) -> Alert:
     alert.approved_by_user_id = admin.id
     alert.approved_at = datetime.now(timezone.utc)
     alert.expires_at = alert.approved_at + timedelta(hours=get_settings().alert_ttl_hours)
+    from app.services.notification_outbox import enqueue
+    enqueue(db, alert)
     db.commit()
     # This development hook runs only after successful persistence; it sends nothing.
     try:

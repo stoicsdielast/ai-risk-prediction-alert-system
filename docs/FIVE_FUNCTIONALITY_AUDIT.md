@@ -65,12 +65,27 @@ placeholder probabilities are used. `test_static_datum_coverage_and_future_isola
 proves future observations are excluded and mutated history causes a 409. Genuine
 Fiji observations remain **BLOCKED** (validated geography, datum, compatible model).
 
+### Saved locations and notification outbox (verified)
+
+Implemented: `/api/me/subscriptions`, `/api/me/notification-preferences`,
+`/api/me/notifications*`, transactional outbox enqueue in `approve_alert`, leased
+claim/check/receipt delivery, bounded retry, dashboard saved-location panel and an
+authenticated browser delivery client (`outboxDelivery.ts`). Verified: authz (401/403),
+multiple and duplicate subscriptions, concurrent PUT/approve/claim on real PostgreSQL,
+retry without duplicate records, suppression/expiry/unsubscribe/opt-out/inactive-location
+after claim, approval rollback on enqueue failure, synthetic alerts never enqueue,
+browser consent (never prompted by delivery code). Results: backend `tests` 256 passed /
+9 skipped, `ai/tests` 126 passed (excluding `test_pipeline.py`, whose dataset
+`archive/flood_risk_dataset_india.csv` is absent from the working tree), PostgreSQL
+6 passed, frontend 109 passed, lint and build clean. Not claimed: background Web Push,
+service worker, WebSocket, SMS/email.
+
 ### Remaining F5 gaps (Task 3, 20 October 2026)
 
-- **Saved-location subscriptions — MISSING.** No model/table/route/UI. The public
+- **Saved-location subscriptions — IMPLEMENTED (see F5 checklist).** Formerly: No model/table/route/UI. The public
   alert feed is unauthenticated, so per-user filtering needs an authenticated
   subscription feed; requires migration, CRUD API, UI toggle, tests.
-- **Durable notification delivery — PARTIAL.** Frontend Notification API is complete
+- **Durable notification delivery — IMPLEMENTED for open-browser delivery; Web Push/email/SMS remain absent.** Formerly: Frontend Notification API is complete
   (opt-in, demo labelling, dedup, multi-tab lock), but `services/notification_service.py`
   is a logging stub: no outbox/queue, retries, email/SMS, service worker or Web Push.
 - **Expiry — implemented, with policy gaps.** Filtering is lazy at read time; no
@@ -284,9 +299,9 @@ exactly one revision (synthetic demo tables). Any weather table must be added th
 | AT-04 | Public approved-alert panel + polling + dedup | **C** | `GET /api/alerts/active` (`routes/alerts.py:126-135`); 30 s poll (`useAlertFeed.ts:7,37`); id-dedup (`api/alerts.ts:39`); suppression removal tested (`CommunityAlertsPage.test.tsx:31-51`) |
 | AT-04 | Severity by text, accessibility | **C** | `RiskPill` text labels; `aria-live`/`aria-label` (`AlertFeedStatus.tsx:21`, card/banner) |
 | — | Browser notifications, opt-in/out | **C** | `browserNotificationService.ts` (click-gated permission `:33-47`, dedup via localStorage+`navigator.locks`, HIGH/VERY_HIGH filter); UI control `BrowserAlertControl.tsx`; 10 dedicated test cases |
-| — | Durable notification delivery / outbox | **M** | `services/notification_service.py` is a logging-only development hook; no queue, retries, email/SMS or delivery log |
-| — | Push subscriptions / service worker | **M** | No `PushManager`/service worker/web-push code in frontend or backend |
-| — | Saved-location subscriptions | **M** | No saved-location model, route, migration or UI; public alert feed is unauthenticated so per-user filtering needs an authenticated feed |
+| — | Durable notification delivery / outbox | **C** (open-browser scope) | `notification_outbox`/`notification_attempts` (migration `20261023_notifications`), `services/notification_outbox.py`; transactional enqueue on approval, unique `user_id, alert_id`, leased claim/check/receipt, bounded retry with backoff, error + timestamp history; `tests/test_notifications.py`, `weather_tests/test_notifications_postgres.py`. Email/SMS absent |
+| — | Push subscriptions / service worker | **M** | Still absent by design: delivery is open-browser polling of `/api/me/notifications`; no background Web Push is claimed |
+| — | Saved-location subscriptions | **C** | `saved_locations` composite key, `/api/me/subscriptions`, `/api/me/notification-preferences` (`routes/notifications.py`), dashboard `SavedLocationsPanel.tsx`; multiple locations, idempotent PUT, owner-only access; tests in `test_notifications.py` and `SavedLocationsPanel.test.tsx` |
 
 ---
 
@@ -383,7 +398,7 @@ reassignment is assumed deliberate.)
 
 | # | Task | Owner |
 |---|---|---|
-| P2-1 | Saved-location subscriptions (model, API, frontend toggle) | Aryan |
+| P2-1 | ~~Saved-location subscriptions~~ (done) | Aryan |
 | P2-2 | Service worker + Web Push delivery with durable outbox | Aryan |
 | P2-3 | Immutable alert audit-history table | Atharv |
 | P2-4 | Escape the Leaflet divIcon risk interpolation | Atharv |

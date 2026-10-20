@@ -7,6 +7,7 @@ from app.models.user import AccountStatus, User, UserRole
 from app.models.synthetic import SyntheticDataset, SyntheticObservation, SyntheticPrediction, SyntheticAlert
 from app.models.weather import WeatherObservation, DemoWeatherObservation
 from app.models.generated_prediction import V1WeatherProfile, GeneratedPredictionProvenance
+from app.models.notification import SavedLocation, NotificationPreference, NotificationOutbox, NotificationAttempt
 
 __all__ = [
     "AccountStatus", "Alert", "AlertSource", "AlertStatus", "Division", "Location",

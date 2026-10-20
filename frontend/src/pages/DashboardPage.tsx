@@ -5,6 +5,7 @@ import { Alert } from '../components/Alert'
 import { usePublicAlerts } from '../alerts/useAlertFeed'
 import { AlertFeedStatus } from '../components/alerts/AlertFeedStatus'
 import { SyntheticReplayPanel } from '../components/research/SyntheticReplayPanel'
+import { SavedLocationsPanel } from '../components/alerts/SavedLocationsPanel'
 
 interface DashboardLocationState {
   accessDenied?: string
@@ -40,6 +41,7 @@ export function DashboardPage() {
         <Link className="button button--primary" to="/alerts">View community alerts</Link>
       </section>
 
+      <SavedLocationsPanel />
       <SyntheticReplayPanel />
 
       <section className="identity-grid" aria-label="Account summary">

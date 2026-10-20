@@ -1,50 +1,68 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { usePublicAlerts } from './PublicAlertContext'
+import { useAuth } from '../auth/useAuth'
+import { getNotificationPreferences, setNotificationPreference } from '../api/notifications'
 import { browserAlertPermission, createBrowserAlertService } from './browserNotificationService'
+import { deliverOutbox } from './outboxDelivery'
 
 export function useBrowserAlerts() {
-  const feed = usePublicAlerts()
+  const { token, user } = useAuth()
   const navigate = useNavigate()
   const [permission, setPermission] = useState(browserAlertPermission)
+  const [enabled, setEnabled] = useState(false)
+  const [deliveryEnabled, setDeliveryEnabled] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const service = useRef<ReturnType<typeof createBrowserAlertService> | null>(null)
-  if (!service.current) service.current = createBrowserAlertService((id) => navigate(id ? `/alerts#alert-${id}` : '/alerts'))
-
   useEffect(() => {
     const update = () => setPermission(browserAlertPermission())
     window.addEventListener('focus', update)
-    document.addEventListener('visibilitychange', update)
-    return () => {
-      window.removeEventListener('focus', update)
-      document.removeEventListener('visibilitychange', update)
-    }
+    return () => window.removeEventListener('focus', update)
   }, [])
-
   useEffect(() => {
-    if (!feed.data || feed.error || feed.refreshing) return
+    if (!token || !user) return
     let active = true
-    void service.current!.sync(feed.data, (message) => { if (active) setError(message) })
-      .catch(() => { if (active) setError('Browser alert delivery failed. The website alert feed remains available.') })
-    return () => { active = false }
-  }, [feed.data, feed.error, feed.refreshing, permission])
+    let timer: ReturnType<typeof setTimeout>
+    async function poll() {
+      try {
+        const prefs = await getNotificationPreferences(token!)
+        if (!active) return
+        setEnabled(prefs.browser_enabled)
+        setDeliveryEnabled(prefs.delivery_enabled)
+        setPermission(browserAlertPermission())
+        await deliverOutbox(token!, user!.id, id => navigate(`/alerts#alert-${id}`), () => active)
+        if (active) setError(null)
+      } catch (caught) {
+        if (active) setError(caught instanceof Error ? caught.message : 'Unable to load notifications')
+      } finally {
+        if (active) timer = setTimeout(() => void poll(), 30_000)
+      }
+    }
+    void poll()
+    return () => { active = false; clearTimeout(timer) }
+  }, [token, user, navigate])
 
   async function enable() {
-    if (busy) return
-    setError(null)
-    const current = browserAlertPermission()
-    if (current !== 'default') { setPermission(current); return }
+    if (!token || busy) return
     setBusy(true)
+    setError(null)
     try {
-      // Invoked only from the permission button's click handler.
-      setPermission(await window.Notification.requestPermission())
-    } catch {
-      setError('The browser could not request permission. Open this site directly in a desktop browser using localhost or HTTPS.')
-    } finally {
-      setBusy(false)
-    }
+      const current = browserAlertPermission()
+      const granted = current === 'default' ? await Notification.requestPermission() : current
+      setPermission(granted)
+      if (granted === 'granted') {
+        const prefs = await setNotificationPreference(token, true)
+        setEnabled(prefs.browser_enabled)
+      }
+    } catch (caught) { setError(caught instanceof Error ? caught.message : 'Unable to save preference') }
+    finally { setBusy(false) }
   }
-
-  return { permission, busy, error, enable, test: () => { setError(null); service.current!.test(setError) } }
+  async function disable() {
+    if (!token || busy) return
+    setBusy(true)
+    try { await setNotificationPreference(token, false); setEnabled(false); setError(null) }
+    catch (caught) { setError(caught instanceof Error ? caught.message : 'Unable to save preference') }
+    finally { setBusy(false) }
+  }
+  return { permission, enabled, deliveryEnabled, busy, error, enable, disable,
+    test: () => createBrowserAlertService(() => navigate('/alerts')).test(setError) }
 }
