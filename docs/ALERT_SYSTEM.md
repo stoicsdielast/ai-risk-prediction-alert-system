@@ -104,6 +104,11 @@ demonstration scenarios stay reproducible.
 | `ALERT_TTL_HOURS` | `24` | Lifetime stamped on a newly approved alert |
 | `ALERT_COOLDOWN_HOURS` | `6` | Repeated-event window for automatic recommendations; `0` disables |
 
+Synthetic demonstration alerts are a separate feature: they live in
+`synthetic_alerts`, use only `/api/synthetic/*` routes, and never write to the
+operational `alerts` table. They therefore cannot appear in `/api/alerts/active`,
+on the map/dashboard, or in browser notifications.
+
 ## Endpoints
 
 Every `/api/admin/alerts` action requires an HS256 JWT for an active, approved

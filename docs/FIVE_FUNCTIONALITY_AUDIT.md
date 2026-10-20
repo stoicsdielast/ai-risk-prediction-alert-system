@@ -40,6 +40,53 @@ writes, reactivation restores it, 2100 stored synthetic weather rows read back a
 99 frontend tests passed, oxlint clean, `tsc -b && vite build` passed; backend
 378 passed / 9 skipped, PostgreSQL weather 4 passed, ML 46 passed / 1 skipped.
 
+### Operational prediction-chain verification (Task 2, 20 October 2026)
+
+Verified against the real V1 artifacts (`ml/artifacts/synthetic/v1`) and the
+simulated historical dataset; eight `tests/test_v1_generation.py` tests ran (none
+skipped) and two `weather_tests/test_generation_postgres.py` tests passed on real
+PostgreSQL.
+
+| Stage | Status | Evidence |
+| --- | --- | --- |
+| Stored weather observations | **C** (research scope) | `POST /api/admin/weather/observations` + latest/history, worker `services/weather_ingestion.py:38`, simulated import `app/db/import_v1_weather.py:23`; `tests/test_weather.py`, `weather_tests/test_postgres.py:74,97`. Genuine provider not configured |
+| Feature engineering | **C** (V1 synthetic contract) | `services/v1_features.py:34,74` reads 175 stored observations + verified static profile only; no labels/feature parquet; `test_actual_feature_and_pipeline_parity_all_locations` matches the published features at `atol=1e-10` for all 12 locations, and `test_missingness_policy_and_history_guards` |
+| CatBoost V1 inference | **C** (research replay) | `services/v1_model.py:19-45` loads only `synthetic-fiji-v1-catboost__none`, verifies file + schema checksums, 56 features; prediction compared to the saved bundle in the parity test |
+| Persisted prediction | **P** | Persists `SyntheticPrediction` + `GeneratedPredictionProvenance` (`prediction_generation.py:45-55`), not the operational `predictions` table. Operational rows come only from `seed_locations.py:149` samples and demo fixtures |
+| PENDING alert | **P** | Creates `SyntheticAlert` (isolated table) when `SYNTHETIC_DEMO_ENABLED=true` (`prediction_generation.py:60` → `synthetic_alert_service.py`); operational `Alert` has no production caller |
+| Admin approval | **C** | Operational `PATCH /api/admin/alerts/{id}/approve` and isolated `POST /api/synthetic/admin/alerts/{id}/approve`; authz/audit tests |
+| Public map/dashboard | **P** | Map/dashboard consume operational locations/predictions/alerts (`useMapLocations.ts`, `DashboardPage.tsx`); V1-generated synthetic rows are shown only in isolated research views, not on the map |
+| Browser notification | **C** (operational alerts) | `frontend/src/alerts/browserNotificationService.ts` (opt-in, baseline, dedup via localStorage + `navigator.locks`, 10 test cases); 30 s approved-alert polling (`useAlertFeed.ts:7,37`); synthetic alerts never enter it |
+
+The model receives genuine computed features from stored observations and verified
+static attributes; no hardcoded feature values, simulated ground-truth labels, or
+placeholder probabilities are used. `test_static_datum_coverage_and_future_isolation`
+proves future observations are excluded and mutated history causes a 409. Genuine
+Fiji observations remain **BLOCKED** (validated geography, datum, compatible model).
+
+### Remaining F5 gaps (Task 3, 20 October 2026)
+
+- **Saved-location subscriptions — MISSING.** No model/table/route/UI. The public
+  alert feed is unauthenticated, so per-user filtering needs an authenticated
+  subscription feed; requires migration, CRUD API, UI toggle, tests.
+- **Durable notification delivery — PARTIAL.** Frontend Notification API is complete
+  (opt-in, demo labelling, dedup, multi-tab lock), but `services/notification_service.py`
+  is a logging stub: no outbox/queue, retries, email/SMS, service worker or Web Push.
+- **Expiry — implemented, with policy gaps.** Filtering is lazy at read time; no
+  scheduled transition/cleanup, no admin extend/withdraw action for an expired alert,
+  global TTL (not per severity), and alerts approved before the migration are
+  grandfathered with `NULL` expiry.
+- **Cooldown — implemented, with traceability gaps.** A coalesced request returns the
+  existing alert, which may reference a different prediction; the window runs from
+  `created_at`, uses one global setting, and the decision is not written to an audit
+  log.
+- **Duplicate prevention — COMPLETE.** DB uniqueness (`uq_alert_location_prediction`),
+  prediction identity + provenance-hash conflict (409), savepoint race recovery,
+  one synthetic alert per prediction, idempotent retries, and client notification
+  dedup. No server-side outbox exists, so cross-device notification dedup is not
+  possible yet.
+
+
 `GET /api/risk/{location}` now returns 410; no hardcoded probability remains.
 `POST /api/predictions/generate` is MET-admin authenticated, explicitly research-only,
 source-aware and returns DATA_UNAVAILABLE for insufficient/incompatible inputs.
@@ -224,10 +271,10 @@ exactly one revision (synthetic demo tables). Any weather table must be added th
 
 | ID | Requirement | Status | Evidence |
 |---|---|---|---|
-| RI-02 | `create_alert_from_prediction` transactional helper | **C** | `alert_service.py:141-180` — flush-only, savepoint, HIGH/VERY_HIGH only, sample-blocked; rollback tests `test_alerts.py:228-251` |
-| RI-02 | Helper called from a production prediction flow | **M** | Callers: demo fixture, admin retry, tests only (see AI-02) |
-| RI-02 | Retry idempotency / no revival | **C** | `uq_alert_location_prediction` (`models/alert.py:34`); reuse logic `alert_service.py:154-179`; tests `:204-225,254-267` |
-| RI-02 | Approval-only publication, atomic rollback | **C** | Public filter `alert_service.py:308`; hook after commit `:264-269`; tests `:125,279,323-358,550-577` |
+| RI-02 | `create_alert_from_prediction` transactional helper | **C** | `alert_service.py:166-213` — flush-only, savepoint, HIGH/VERY_HIGH only, sample-blocked; rollback tests `test_alerts.py:228-251` |
+| RI-02 | Helper called from a production prediction flow | **P** | Production caller exists only for the isolated synthetic flow (`prediction_generation.py:60` → `synthetic_alert_service`, separate tables, demo gate). Operational callers remain demo fixture/admin retry/tests (see AI-02) |
+| RI-02 | Retry idempotency / no revival | **C** | `uq_alert_location_prediction` (`models/alert.py:34`); reuse logic `alert_service.py:185-200`; tests `:204-225,254-267` |
+| RI-02 | Approval-only publication, atomic rollback | **C** | Public filter `alert_service.py:336-349`; hook after commit `:304-311`; tests `:125,279,323-358,550-577` |
 | RI-02 | Expiry policy | **C** | `expires_at` stamped on approval from `ALERT_TTL_HOURS` (default 24 h); public feed excludes expired rows while admin history keeps the `APPROVED` record (`alert_service.py` approval/public filters, migration `20261022_alert_expiry`); tests `test_approval_sets_expiry_window_from_configured_ttl`, `test_expired_approved_alert_is_hidden_publicly_but_kept_for_admin` |
 | RI-02 | Cooldown / escalation policy | **C** | `ALERT_COOLDOWN_HOURS` (default 6 h) coalesces automatic recommendations per location; strictly higher severity escalates, `REJECTED` does not block, manual drafts bypass, sample/demo bypass (`_recent_location_alert`); tests for reuse, escalation, window, rejection, suppression, expiry and manual bypass |
 | RI-02 | Audit fields | **C** (columns) / **M** (log table) | Full reviewer/timestamp/reason columns with DB check constraints (`models/alert.py:48-60`); no separate audit-history table |
@@ -235,9 +282,10 @@ exactly one revision (synthetic demo tables). Any weather table must be added th
 | AT-03 | Admin UI on real APIs (list/create/edit/approve/reject/suppress) | **C** | `api/alerts.ts:25-68`, `AlertsDashboardPage.tsx:64-342`; suppression reason required; 409 → refresh; session-expiry logout; 15 test cases |
 | AT-04 | Public approved-alert panel + polling + dedup | **C** | `GET /api/alerts/active` (`routes/alerts.py:126-135`); 30 s poll (`useAlertFeed.ts:7,37`); id-dedup (`api/alerts.ts:39`); suppression removal tested (`CommunityAlertsPage.test.tsx:31-51`) |
 | AT-04 | Severity by text, accessibility | **C** | `RiskPill` text labels; `aria-live`/`aria-label` (`AlertFeedStatus.tsx:21`, card/banner) |
-| — | Browser notifications, opt-in/out | **C** | `browserNotificationService.ts` (click-gated permission `:33-47`, dedup via localStorage+`navigator.locks`, HIGH/VERY_HIGH filter); UI control `BrowserAlertControl.tsx`; 17 frontend test cases |
+| — | Browser notifications, opt-in/out | **C** | `browserNotificationService.ts` (click-gated permission `:33-47`, dedup via localStorage+`navigator.locks`, HIGH/VERY_HIGH filter); UI control `BrowserAlertControl.tsx`; 10 dedicated test cases |
+| — | Durable notification delivery / outbox | **M** | `services/notification_service.py` is a logging-only development hook; no queue, retries, email/SMS or delivery log |
 | — | Push subscriptions / service worker | **M** | No `PushManager`/service worker/web-push code in frontend or backend |
-| — | Saved-location subscriptions | **M** | No `saved_location` model/route/subscription concept anywhere |
+| — | Saved-location subscriptions | **M** | No saved-location model, route, migration or UI; public alert feed is unauthenticated so per-user filtering needs an authenticated feed |
 
 ---
 
