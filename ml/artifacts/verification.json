@@ -1,0 +1,19 @@
+{
+  "checks": {
+    "Pinned dataset and provenance": "Git blob hashes, SHA256 and full Parquet decode passed",
+    "ML validation/leakage/training smoke": "7 passed",
+    "Backend and legacy AI": "323 passed; 6 PostgreSQL migration checks skipped",
+    "Frontend": "59 passed",
+    "Frontend production build": "passed",
+    "Frontend lint": "passed with no warnings",
+    "Independent training reproduction": "identical subset, classifier, thresholds, clustering and evaluation metrics",
+    "Real artifact inference": "API probabilities match both held-out examples",
+    "Git diff whitespace check": "passed"
+  },
+  "limitations": [
+    "No TEST_DATABASE_URL: PostgreSQL migration tests skipped; API persistence tests use SQLite",
+    "FastAPI TestClient stalled inside sandbox; tests passed outside the sandbox restriction",
+    "Starlette/httpx deprecation warning remains",
+    "No real-browser end-to-end notification or live PostgreSQL deployment performed"
+  ]
+}

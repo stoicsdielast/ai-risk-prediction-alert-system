@@ -82,7 +82,7 @@ function FieldIcon({ name }: { name: 'email' | 'password' }) {
 }
 
 export function LoginPage() {
-  const { login } = useAuth()
+  const { login, sessionError } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [email, setEmail] = useState('')
@@ -90,6 +90,9 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [feedback, setFeedback] = useState<LoginFeedback | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const displayedFeedback: LoginFeedback | null = feedback ?? (
+    !isSubmitting && sessionError ? { kind: 'error', message: sessionError } : null
+  )
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -163,15 +166,15 @@ export function LoginPage() {
             <p>Sign in to access your Fiji MET flood-risk dashboard.</p>
           </header>
 
-          {feedback && (
+          {displayedFeedback && (
             <div
-              className={`login-feedback login-feedback--${feedback.kind}`}
+              className={`login-feedback login-feedback--${displayedFeedback.kind}`}
               role="alert"
             >
-              {feedback.label && (
-                <span className="login-feedback__pill">{feedback.label}</span>
+              {displayedFeedback.label && (
+                <span className="login-feedback__pill">{displayedFeedback.label}</span>
               )}
-              <p>{feedback.message}</p>
+              <p>{displayedFeedback.message}</p>
             </div>
           )}
 

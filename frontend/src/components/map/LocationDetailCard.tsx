@@ -1,7 +1,16 @@
+import { useLocationWeather } from '../../locations/useLocationWeather'
+import type { PublicAlert } from '../../types/alert'
 import type { MapLocation, MapPrediction } from '../../types/location'
+import type { ApiWeatherObservation } from '../../types/weather'
 import type { RiskLevel } from '../../types/prototype'
-import { formatDateTime, formatRelativeTime } from '../../utils/date'
+import {
+  formatDateTime,
+  formatRelativeTime,
+  isStaleTimestamp,
+  PREDICTION_STALE_AFTER_HOURS,
+} from '../../utils/date'
 import { DataPill, RiskPill } from '../pills/DataPill'
+import type { PillValue } from '../pills/DataPill'
 
 const RISK_HEADINGS: Record<RiskLevel, string> = {
   LOW: 'Low flood risk',
@@ -12,6 +21,8 @@ const RISK_HEADINGS: Record<RiskLevel, string> = {
 
 interface LocationDetailCardProps {
   location: MapLocation | null
+  /** Approved community alerts for this location, from the live public feed. */
+  activeAlerts?: PublicAlert[]
 }
 
 interface WeatherMetricProps {
@@ -30,6 +41,60 @@ function WeatherMetric({ label, value, hint }: WeatherMetricProps) {
   )
 }
 
+function observationMetrics(
+  observation: ApiWeatherObservation,
+): WeatherMetricProps[] {
+  const metrics: WeatherMetricProps[] = []
+
+  if (observation.temperature_c !== null) {
+    metrics.push({ label: 'Temperature', value: `${observation.temperature_c}°C` })
+  }
+  if (observation.rainfall_mm !== null) {
+    metrics.push({
+      label: 'Rainfall',
+      value: `${observation.rainfall_mm} mm`,
+      hint: observation.rainfall_period_minutes
+        ? `Per ${observation.rainfall_period_minutes}-minute interval`
+        : undefined,
+    })
+  }
+  if (observation.humidity_pct !== null) {
+    metrics.push({ label: 'Humidity', value: `${observation.humidity_pct}%` })
+  }
+  if (observation.wind_speed_mps !== null) {
+    metrics.push({ label: 'Wind', value: `${observation.wind_speed_mps} m/s` })
+  }
+  if (observation.pressure_hpa !== null) {
+    metrics.push({ label: 'Pressure', value: `${observation.pressure_hpa} hPa` })
+  }
+  if (observation.river_level_m !== null) {
+    metrics.push({
+      label: 'River level',
+      value: `${observation.river_level_m} m`,
+      hint: observation.gauge_datum ?? undefined,
+    })
+  }
+
+  return metrics
+}
+
+const PROVENANCE_PILLS: Record<MapPrediction['provenance'], PillValue> = {
+  model: 'AI_PREDICTION',
+  sample: 'SAMPLE_RISK',
+  synthetic: 'SYNTHETIC_PREDICTION',
+}
+
+function provenanceNote(prediction: MapPrediction): string {
+  switch (prediction.provenance) {
+    case 'model':
+      return `Model ${prediction.modelVersion} · decision-support estimate · not an official public warning`
+    case 'sample':
+      return 'Labelled sample for testing · not a real forecast or official warning'
+    case 'synthetic':
+      return 'Synthetic research simulation · not Fiji MET data or a real forecast'
+  }
+}
+
 function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
   if (!prediction) {
     return (
@@ -43,10 +108,12 @@ function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
     )
   }
 
+  const stale = isStaleTimestamp(prediction.predictedAt)
+
   return (
     <section className="prediction-panel" aria-labelledby="prediction-title">
       <div className="prediction-panel__heading">
-        <DataPill value={prediction.isSample ? 'SAMPLE_RISK' : 'AI_PREDICTION'} />
+        <DataPill value={PROVENANCE_PILLS[prediction.provenance]} />
         <span>{prediction.floodProbabilityPercent}% flood probability</span>
       </div>
       <h3 id="prediction-title">{RISK_HEADINGS[prediction.riskLevel]}</h3>
@@ -58,6 +125,12 @@ function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
         >
           {formatRelativeTime(prediction.predictedAt)}
         </time>
+        {stale && (
+          <>
+            {' '}
+            <DataPill value="STALE" compact />
+          </>
+        )}
         .
       </p>
       <div
@@ -73,16 +146,153 @@ function PredictionPanel({ prediction }: { prediction: MapPrediction | null }) {
           style={{ width: `${prediction.floodProbabilityPercent}%` }}
         />
       </div>
+      <small>{provenanceNote(prediction)}</small>
+      {stale && (
+        <small>
+          This prediction is more than {PREDICTION_STALE_AFTER_HOURS} hours old
+          — treat it as out of date.
+        </small>
+      )}
+    </section>
+  )
+}
+
+function WeatherSection({
+  status,
+  error,
+  latest,
+  retry,
+}: {
+  status: ReturnType<typeof useLocationWeather>['status']
+  error: string | null
+  latest: ReturnType<typeof useLocationWeather>['latest']
+  retry: () => void
+}) {
+  const observation = latest?.observation ?? null
+  const metrics = observation ? observationMetrics(observation) : []
+
+  return (
+    <section
+      className="location-detail-section"
+      aria-labelledby="current-weather-title"
+    >
+      <div className="location-detail-section__heading">
+        <span>
+          Latest observation
+          {observation?.source_type === 'synthetic' && (
+            <>
+              {' '}
+              <DataPill value="SYNTHETIC_DATA" compact />
+            </>
+          )}
+        </span>
+        <h3 id="current-weather-title">Current weather</h3>
+      </div>
+
+      {status === 'idle' || status === 'loading' ? (
+        <div className="prototype-empty-state" role="status">
+          Loading latest stored observation…
+        </div>
+      ) : status === 'error' ? (
+        <div className="prototype-empty-state" role="alert">
+          <p>Weather observations are unavailable. {error}</p>
+          <button type="button" className="map-clear-button" onClick={retry}>
+            Try again
+          </button>
+        </div>
+      ) : !observation ? (
+        <div className="prototype-empty-state">
+          <p>
+            No observation has been stored for this location yet. Stored demo
+            weather appears here once it has been ingested.
+          </p>
+        </div>
+      ) : (
+        <>
+          <p className="location-detail-card__timestamp">
+            Observed{' '}
+            <time
+              dateTime={observation.observed_at}
+              title={formatDateTime(observation.observed_at)}
+            >
+              {formatRelativeTime(observation.observed_at)}
+            </time>
+            {observation.stale && (
+              <>
+                {' '}
+                <DataPill value="STALE" compact />
+              </>
+            )}
+          </p>
+
+          {metrics.length === 0 ? (
+            <div className="prototype-empty-state">
+              This observation was stored without measurement values.
+            </div>
+          ) : (
+            <div className="weather-metric-grid">
+              {metrics.map((metric) => (
+                <WeatherMetric key={metric.label} {...metric} />
+              ))}
+            </div>
+          )}
+
+          {observation.notice && <small>{observation.notice}</small>}
+        </>
+      )}
+    </section>
+  )
+}
+
+function alertSourceLabel(source: PublicAlert['source']): string {
+  return source === 'MET_OFFICIAL' ? 'MET official' : 'AI recommendation'
+}
+
+function PublicAlertsPanel({ alerts }: { alerts: PublicAlert[] }) {
+  return (
+    <section
+      className={`official-warning-panel${
+        alerts.length === 0 ? ' official-warning-panel--clear' : ''
+      }`}
+      aria-labelledby="public-alerts-title"
+    >
+      <DataPill
+        value={alerts.length === 0 ? 'NO_ALERTS' : 'APPROVED'}
+        label={alerts.length === 0 ? undefined : 'Approved alert'}
+      />
+      <h3 id="public-alerts-title">Approved public alerts</h3>
+
+      {alerts.length === 0 ? (
+        <p>No approved community alert is active for this location.</p>
+      ) : (
+        alerts.map((alert) => (
+          <div className="activity-item" key={alert.id}>
+            <div className="activity-item__content">
+              <div className="activity-item__heading">
+                <RiskPill risk={alert.severity} compact />
+                <small>{alertSourceLabel(alert.source)}</small>
+              </div>
+              <p>{alert.message}</p>
+              <small>{formatRelativeTime(alert.created_at)}</small>
+            </div>
+          </div>
+        ))
+      )}
+
       <small>
-        {prediction.isSample
-          ? 'Labelled sample for testing · not a real forecast or official warning'
-          : 'Decision-support estimate · not an official public warning'}
+        Approved alerts from this system only. Official Fiji Meteorological
+        Service warnings are issued separately and always take precedence.
       </small>
     </section>
   )
 }
 
-export function LocationDetailCard({ location }: LocationDetailCardProps) {
+export function LocationDetailCard({
+  location,
+  activeAlerts = [],
+}: LocationDetailCardProps) {
+  const weather = useLocationWeather(location?.apiId ?? null)
+
   if (!location) {
     return (
       <aside className="location-detail-card location-detail-card--empty">
@@ -92,8 +302,6 @@ export function LocationDetailCard({ location }: LocationDetailCardProps) {
       </aside>
     )
   }
-
-  const { conditions } = location
 
   return (
     <aside className="location-detail-card" aria-live="polite">
@@ -105,61 +313,16 @@ export function LocationDetailCard({ location }: LocationDetailCardProps) {
         <RiskPill risk={location.riskLevel} />
       </header>
 
-      {conditions && (
-        <>
-          <p className="location-detail-card__timestamp">
-            Updated{' '}
-            <time
-              dateTime={conditions.updatedAt}
-              title={formatDateTime(conditions.updatedAt)}
-            >
-              {formatRelativeTime(conditions.updatedAt)}
-            </time>
-          </p>
-
-          <section
-            className="location-detail-section"
-            aria-labelledby="current-weather-title"
-          >
-            <div className="location-detail-section__heading">
-              <span>Latest observation</span>
-              <h3 id="current-weather-title">Current weather</h3>
-            </div>
-            <div className="weather-metric-grid">
-              <WeatherMetric label="Conditions" value={conditions.condition} />
-              <WeatherMetric label="Temperature" value={`${conditions.temperatureC}°C`} />
-              <WeatherMetric
-                label="Rainfall"
-                value={`${conditions.rainfall24hMm} mm`}
-                hint="Past 24 hours"
-              />
-              <WeatherMetric label="Humidity" value={`${conditions.humidityPercent}%`} />
-              <WeatherMetric label="Wind" value={`${conditions.windKph} km/h`} />
-            </div>
-          </section>
-        </>
-      )}
+      <WeatherSection
+        status={weather.status}
+        error={weather.error}
+        latest={weather.latest}
+        retry={weather.retry}
+      />
 
       <PredictionPanel prediction={location.prediction} />
 
-      <section
-        className={`official-warning-panel${
-          conditions?.officialWarning ? '' : ' official-warning-panel--clear'
-        }`}
-        aria-labelledby="official-warning-title"
-      >
-        <DataPill
-          value="OFFICIAL_WARNING"
-          label={conditions?.officialWarning ? undefined : 'No official warning active'}
-        />
-        <h3 id="official-warning-title">
-          {conditions?.officialWarning ? 'Official public warning' : 'Official status'}
-        </h3>
-        <p>
-          {conditions?.officialWarning ??
-            'No official Fiji MET warning is included for this location in the current demo data.'}
-        </p>
-      </section>
+      <PublicAlertsPanel alerts={activeAlerts} />
     </aside>
   )
 }

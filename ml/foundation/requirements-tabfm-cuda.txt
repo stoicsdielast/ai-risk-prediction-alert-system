@@ -1,0 +1,2 @@
+-r requirements-cuda-common.txt
+tabfm[pytorch] @ git+https://github.com/google-research/tabfm@fbb665569425fd2f490c6576b3af967876fe11ff

@@ -15,7 +15,7 @@ export function SessionErrorScreen() {
           <button className="button button--primary" type="button" onClick={retrySession}>
             Try again
           </button>
-          <button className="button button--secondary" type="button" onClick={logout}>
+          <button className="button button--secondary" type="button" onClick={() => logout()}>
             Return to sign in
           </button>
         </div>

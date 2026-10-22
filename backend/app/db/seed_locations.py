@@ -26,7 +26,7 @@ from sqlalchemy.orm import Session
 from app.db.init_db import create_tables
 from app.db.session import get_session_factory
 from app.models.location import Division, Location
-from app.models.prediction import Prediction
+from app.models.prediction import ALERT_DEMO_MODEL_PREFIX, Prediction
 from app.models.risk import RiskLevel
 
 
@@ -134,6 +134,7 @@ def seed_demo_locations(db: Session) -> SeedResult:
         .where(
             Prediction.location_id.in_([location.id for location, _ in locations]),
             Prediction.is_sample.is_(True),
+            ~Prediction.model_version.startswith(ALERT_DEMO_MODEL_PREFIX),
         )
         .order_by(Prediction.predicted_at, Prediction.id)
     ):

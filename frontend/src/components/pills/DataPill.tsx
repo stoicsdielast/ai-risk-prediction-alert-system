@@ -1,12 +1,15 @@
 import type { AlertStatus, RiskLevel } from '../../types/prototype'
 
-type PillValue =
+export type PillValue =
   | AlertStatus
   | RiskLevel
   | 'AI_PREDICTION'
-  | 'OFFICIAL_WARNING'
+  | 'NO_ALERTS'
   | 'NO_PREDICTION'
   | 'SAMPLE_RISK'
+  | 'STALE'
+  | 'SYNTHETIC_DATA'
+  | 'SYNTHETIC_PREDICTION'
 
 interface DataPillProps {
   value: PillValue
@@ -24,9 +27,12 @@ const labels: Record<PillValue, string> = {
   REJECTED: 'Rejected',
   SUPPRESSED: 'Suppressed',
   AI_PREDICTION: 'AI prediction',
-  OFFICIAL_WARNING: 'Official warning',
+  NO_ALERTS: 'No approved alert',
   NO_PREDICTION: 'No prediction',
   SAMPLE_RISK: 'Sample risk',
+  STALE: 'Stale',
+  SYNTHETIC_DATA: 'Synthetic demo data',
+  SYNTHETIC_PREDICTION: 'Synthetic research',
 }
 
 export function DataPill({ value, label, compact = false }: DataPillProps) {

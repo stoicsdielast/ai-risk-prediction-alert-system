@@ -1,8 +1,8 @@
 .landing-page,
 .login-page,
 .auth-session-loader {
-  --entry-navy: #2d3055;
-  --entry-navy-dark: #242746;
+  --entry-navy: var(--brand-navy);
+  --entry-navy-dark: var(--brand-navy-deep);
   --entry-background: #f7f8fb;
   --entry-surface: #ffffff;
   --entry-text: #22263f;
@@ -28,9 +28,8 @@
   position: sticky;
   z-index: 20;
   top: 0;
-  border-bottom: 1px solid rgba(229, 231, 235, 0.92);
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .landing-header__inner {

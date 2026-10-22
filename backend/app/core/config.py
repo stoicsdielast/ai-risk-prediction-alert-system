@@ -10,6 +10,34 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    browser_delivery_enabled: bool = False
+    weather_freshness_minutes: int = Field(default=180, ge=1, le=10080)
+    weather_ingestion_enabled: bool = False
+    weather_feed_url: str | None = None
+    weather_feed_source: str = "configured-feed"
+    weather_feed_synthetic: bool = True
+    weather_feed_token: SecretStr | None = None
+    weather_poll_seconds: int = Field(default=900, ge=10)
+    weather_retry_attempts: int = Field(default=3, ge=1, le=10)
+    weather_timeout_seconds: int = Field(default=20, ge=1, le=120)
+    synthetic_model_dir: Path = Field(default=BACKEND_DIR.parent / "ml/artifacts/synthetic/v1", validation_alias="SYNTHETIC_MODEL_DIR")
+    synthetic_research_dir: Path = Field(
+        default=BACKEND_DIR.parent / "ml/artifacts/synthetic/v3", validation_alias="SYNTHETIC_RESEARCH_DIR",
+    )
+    research_runs_dir: Path = Field(
+        default=BACKEND_DIR.parent / "ml" / "runs", validation_alias="RESEARCH_RUNS_DIR",
+    )
+    synthetic_demo_enabled: bool = Field(default=False, validation_alias="SYNTHETIC_DEMO_ENABLED")
+    research_model_dir: Path = Field(
+        default=BACKEND_DIR.parent / "ml" / "artifacts", validation_alias="RESEARCH_MODEL_DIR",
+    )
+    alert_demo_enabled: bool = Field(default=False, validation_alias="ALERT_DEMO_ENABLED")
+    alert_ttl_hours: int = Field(
+        default=24, ge=1, le=720, validation_alias="ALERT_TTL_HOURS",
+    )
+    alert_cooldown_hours: int = Field(
+        default=6, ge=0, le=720, validation_alias="ALERT_COOLDOWN_HOURS",
+    )
     database_url: str = Field(validation_alias="DATABASE_URL")
     jwt_secret_key: SecretStr = Field(
         min_length=32,

@@ -1,0 +1,6 @@
+partition,0,1,2
+excluded,1381,2931,304
+holdout_station,449,954,117
+test,1692,3782,551
+train,3454,7523,1072
+validation,1802,3430,558

@@ -1,4 +1,4 @@
-import type { RiskLevel, WeatherLocation } from './prototype'
+import type { RiskLevel } from './prototype'
 
 export type DivisionCode = 'CENTRAL' | 'WESTERN' | 'NORTHERN' | 'EASTERN'
 
@@ -14,6 +14,7 @@ export interface ApiPrediction {
 
 /** A location as returned by `GET /api/locations`. */
 export interface ApiLocation {
+  id: number
   slug: string
   name: string
   division: DivisionCode
@@ -24,22 +25,31 @@ export interface ApiLocation {
   prediction: ApiPrediction | null
 }
 
+/**
+ * Where a displayed prediction came from:
+ * - `model`: a stored V1 model prediction (decision support, not a warning)
+ * - `sample`: seeded label for testing, never a model result
+ * - `synthetic`: simulator research replay output (research demonstration)
+ */
+export type PredictionProvenance = 'model' | 'sample' | 'synthetic'
+
 export interface MapPrediction {
   riskLevel: RiskLevel
   floodProbabilityPercent: number
-  isSample: boolean
+  provenance: PredictionProvenance
+  modelVersion: string
   predictedAt: string
 }
 
 /** A backend location prepared for the weather map. */
 export interface MapLocation {
   id: string
+  /** Numeric registry id used by weather and alert APIs. */
+  apiId: number
   name: string
   division: string
   latitude: number
   longitude: number
   riskLevel: RiskLevel | null
   prediction: MapPrediction | null
-  /** Prototype weather and official-warning data, when the demo set has any. */
-  conditions: WeatherLocation | null
 }

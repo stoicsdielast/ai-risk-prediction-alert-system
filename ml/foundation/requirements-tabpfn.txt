@@ -1,0 +1,2 @@
+-r requirements-common.txt
+tabpfn @ git+https://github.com/PriorLabs/TabPFN@417c9877dbfe657afdbe0aee70af2a05ffe4abba

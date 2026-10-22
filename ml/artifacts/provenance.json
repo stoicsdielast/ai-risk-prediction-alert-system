@@ -1,0 +1,33 @@
+{
+  "repository": "https://github.com/Srabon-bot/Bangladesh-flood-data-set",
+  "commit": "4d6ec74e22a63c1e33012d0f8d106e238dda4e1c",
+  "path": "data/features/2026-08-07c/all_stations.parquet",
+  "verified_at": "2026-10-19T00:32:06.267832+00:00",
+  "files": {
+    "all_stations.parquet": {
+      "bytes": 44212305,
+      "git_blob_sha1": "9fc1842d6767d0e627d81512ce8b75aadd44d81f",
+      "sha256": "8d15cd3bcccb7d79895452b2ca54bfbb186b8c607326f372aa9afa6f1c1b6c98"
+    },
+    "source/README.md": {
+      "bytes": 11649,
+      "git_blob_sha1": "ea1b77321ab1c4f14875de6e6776e7447885fdef",
+      "sha256": "90be854a987851b79c890a3969783f5b519b0fb8c77155ffd118a6971f7c2873"
+    },
+    "source/build_features.py": {
+      "bytes": 22128,
+      "git_blob_sha1": "90ea38461be23468428079e582b575e7eadb4f5d",
+      "sha256": "e9e7f1ff4dd3f81c20deeaa28cd6ee8b7d6efd407911c09913df7f3f90f96061"
+    },
+    "source/stations.py": {
+      "bytes": 12812,
+      "git_blob_sha1": "8a4641a30d0aff1ea372aa02a7951618bdeafe87",
+      "sha256": "a4de761a6e463baa3026d5afacf4677eb4264cd0988a6bef00621f7ecb1f0b96"
+    }
+  },
+  "parquet_full_decode": true,
+  "license_files": [],
+  "license_status": "No repository license found; permission to reuse/redistribute is unresolved. Public access is not a license.",
+  "upstream_terms": "Individual reanalysis, GFMS, event archive, and MERIT Hydro terms also require review.",
+  "source_reliability": "Community-built virtual gauges; reanalysis/modelled hydrology and mixed remote-sensing/event labels. Not Fiji MET or physical-gauge truth."
+}

@@ -1,0 +1,242 @@
+{
+  "SW90": {
+    "station_id": "SW90",
+    "name": "Bahadurabad",
+    "river": "Jamuna",
+    "latitude": 25.1897,
+    "longitude": 89.6595,
+    "basin": "brahmaputra"
+  },
+  "SW93": {
+    "station_id": "SW93",
+    "name": "Sariakandi",
+    "river": "Jamuna",
+    "latitude": 24.8952,
+    "longitude": 89.5975,
+    "basin": "brahmaputra"
+  },
+  "SW99": {
+    "station_id": "SW99",
+    "name": "Sirajganj",
+    "river": "Jamuna",
+    "latitude": 24.4534,
+    "longitude": 89.7009,
+    "basin": "brahmaputra"
+  },
+  "SW17": {
+    "station_id": "SW17",
+    "name": "Chilmari",
+    "river": "Brahmaputra",
+    "latitude": 25.5333,
+    "longitude": 89.6833,
+    "basin": "brahmaputra"
+  },
+  "TE01": {
+    "station_id": "TE01",
+    "name": "Dalia (Teesta Barrage)",
+    "river": "Teesta",
+    "latitude": 25.9167,
+    "longitude": 89.2833,
+    "basin": "brahmaputra"
+  },
+  "TE02": {
+    "station_id": "TE02",
+    "name": "Kaunia",
+    "river": "Teesta",
+    "latitude": 25.7667,
+    "longitude": 89.4333,
+    "basin": "brahmaputra"
+  },
+  "OB01": {
+    "station_id": "OB01",
+    "name": "Mymensingh",
+    "river": "Old Brahmaputra",
+    "latitude": 24.7471,
+    "longitude": 90.4203,
+    "basin": "brahmaputra"
+  },
+  "DH01": {
+    "station_id": "DH01",
+    "name": "Kurigram (Dharla)",
+    "river": "Dharla",
+    "latitude": 25.8058,
+    "longitude": 89.6698,
+    "basin": "brahmaputra"
+  },
+  "GA01": {
+    "station_id": "GA01",
+    "name": "Hardinge Bridge (Kushtia)",
+    "river": "Ganges",
+    "latitude": 24.0708,
+    "longitude": 89.0294,
+    "basin": "ganges"
+  },
+  "GA02": {
+    "station_id": "GA02",
+    "name": "Goalanda (Jamuna-Ganges confluence)",
+    "river": "Padma",
+    "latitude": 23.7167,
+    "longitude": 89.7833,
+    "basin": "ganges"
+  },
+  "GA03": {
+    "station_id": "GA03",
+    "name": "Mawa",
+    "river": "Padma",
+    "latitude": 23.4342,
+    "longitude": 90.265,
+    "basin": "ganges"
+  },
+  "GA04": {
+    "station_id": "GA04",
+    "name": "Bhagyakul (Munshiganj)",
+    "river": "Padma",
+    "latitude": 23.5167,
+    "longitude": 90.2667,
+    "basin": "ganges"
+  },
+  "GO01": {
+    "station_id": "GO01",
+    "name": "Kamarkhali (Kushtia)",
+    "river": "Gorai",
+    "latitude": 23.6333,
+    "longitude": 89.45,
+    "basin": "ganges"
+  },
+  "GO02": {
+    "station_id": "GO02",
+    "name": "Gopalganj",
+    "river": "Madhumati",
+    "latitude": 23.0167,
+    "longitude": 89.8265,
+    "basin": "ganges"
+  },
+  "ME01": {
+    "station_id": "ME01",
+    "name": "Chandpur (Padma-Meghna confluence)",
+    "river": "Meghna",
+    "latitude": 23.2333,
+    "longitude": 90.6667,
+    "basin": "meghna"
+  },
+  "ME02": {
+    "station_id": "ME02",
+    "name": "Bhairab Bazar",
+    "river": "Meghna",
+    "latitude": 24.05,
+    "longitude": 90.9833,
+    "basin": "meghna"
+  },
+  "ME03": {
+    "station_id": "ME03",
+    "name": "Dhaka (Buriganga/Dhaleshwari)",
+    "river": "Dhaleshwari",
+    "latitude": 23.7,
+    "longitude": 90.3667,
+    "basin": "meghna"
+  },
+  "SW267": {
+    "station_id": "SW267",
+    "name": "Sunamganj",
+    "river": "Surma",
+    "latitude": 25.0658,
+    "longitude": 91.395,
+    "basin": "meghna"
+  },
+  "SW174": {
+    "station_id": "SW174",
+    "name": "Sylhet",
+    "river": "Surma",
+    "latitude": 24.8949,
+    "longitude": 91.8687,
+    "basin": "meghna"
+  },
+  "KU01": {
+    "station_id": "KU01",
+    "name": "Sherpur (Sylhet)",
+    "river": "Kushiyara",
+    "latitude": 24.6833,
+    "longitude": 91.8667,
+    "basin": "meghna"
+  },
+  "KU02": {
+    "station_id": "KU02",
+    "name": "Amalshid",
+    "river": "Kushiyara",
+    "latitude": 24.8167,
+    "longitude": 92.2,
+    "basin": "meghna"
+  },
+  "NM01": {
+    "station_id": "NM01",
+    "name": "Durgapur (Netrokona)",
+    "river": "Someshwari",
+    "latitude": 25.15,
+    "longitude": 90.7333,
+    "basin": "meghna"
+  },
+  "CH01": {
+    "station_id": "CH01",
+    "name": "Rangamati (Karnaphuli)",
+    "river": "Karnaphuli",
+    "latitude": 22.6333,
+    "longitude": 92.1833,
+    "basin": "cht"
+  },
+  "CH02": {
+    "station_id": "CH02",
+    "name": "Bandarban (Sangu)",
+    "river": "Sangu",
+    "latitude": 22.1953,
+    "longitude": 92.2183,
+    "basin": "cht"
+  },
+  "CH03": {
+    "station_id": "CH03",
+    "name": "Chittagong (Halda)",
+    "river": "Halda",
+    "latitude": 22.5,
+    "longitude": 91.85,
+    "basin": "cht"
+  },
+  "CO01": {
+    "station_id": "CO01",
+    "name": "Barisal",
+    "river": "Kirtankhola",
+    "latitude": 22.701,
+    "longitude": 90.3535,
+    "basin": "ganges"
+  },
+  "CO02": {
+    "station_id": "CO02",
+    "name": "Khulna (Rupsha)",
+    "river": "Rupsha",
+    "latitude": 22.8456,
+    "longitude": 89.5403,
+    "basin": "ganges"
+  },
+  "CO03": {
+    "station_id": "CO03",
+    "name": "Bagerhat",
+    "river": "Baleswar",
+    "latitude": 22.6602,
+    "longitude": 89.7895,
+    "basin": "ganges"
+  },
+  "CO04": {
+    "station_id": "CO04",
+    "name": "Patuakhali",
+    "river": "Payra",
+    "latitude": 22.3596,
+    "longitude": 90.3296,
+    "basin": "ganges"
+  },
+  "CO05": {
+    "station_id": "CO05",
+    "name": "Cox's Bazar",
+    "river": "Bakkhali",
+    "latitude": 21.4272,
+    "longitude": 92.0058,
+    "basin": "cht"
+  }
+}

@@ -6,8 +6,10 @@ authorization, and MET admin account review for the Fiji Flood Risk Prediction
 and Community Alert System.
 
 A companion React interface consumes these endpoints and includes clearly
-labelled local weather/map/alert prototype views. Real backend AI, weather,
-location, operational-alert, and reporting services are not implemented yet.
+labelled local weather/map/alert prototype views. The alert backend now supports
+persisted drafts, administrator review, suppression, and public approved alerts;
+see the [Alert System guide](../docs/ALERT_SYSTEM.md). Prediction ingestion,
+weather/location management, reporting, and frontend alert integration remain pending.
 See the [frontend prototype guide](../docs/PROTOTYPE_UI.md) for that boundary.
 
 ## What is implemented
@@ -34,6 +36,7 @@ See the [frontend prototype guide](../docs/PROTOTYPE_UI.md) for that boundary.
 - Reusable approved-MET-admin authorization
 - Controlled pending-account approval and rejection transitions
 - Tests for registration, login, JWT, authorization, and account review
+- Persistent alert lifecycle and APIs documented in the [Alert System guide](../docs/ALERT_SYSTEM.md)
 
 ## Prerequisites
 
@@ -160,7 +163,8 @@ This creates the following objects if they do not already exist:
 - `user_role` PostgreSQL enum
 - `account_status` PostgreSQL enum
 - unique index/constraint for `users.email`
-- `locations` table, `division` PostgreSQL enum, and coordinate range checks
+- `locations`, `predictions`, and `alerts` tables and alert/risk enums
+- `division` PostgreSQL enum and location coordinate range checks
 
 The initializer uses SQLAlchemy `create_all`, which creates missing objects but
 does not migrate an existing table when the model changes. Future schema
@@ -426,6 +430,33 @@ Approval and rejection only allow a transition from `PENDING`. A missing user
 returns `404`. Attempting to transition an already approved or rejected user
 returns `409` with a controlled message. Every response uses `UserResponse`, so
 password hashes are never returned.
+
+## MET admin analytics APIs
+
+Read-only analytics for an approved `MET_ADMIN`; no route writes to the
+database, generates a prediction, retrains or promotes a model.
+
+```bash
+# Summary counts, risk bands and model provenance for the last 30 days (days 1..365)
+curl "http://127.0.0.1:8000/api/admin/analytics/predictions/overview?days=30" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+
+# Stored-probability series per location; source is operational or synthetic
+curl "http://127.0.0.1:8000/api/admin/analytics/predictions/trend?days=7&source=operational&location_id=1&location_id=2" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+
+# Parsed saved research artifacts (V1/V2/V3) and the deployed model metadata
+curl "http://127.0.0.1:8000/api/admin/analytics/models/performance" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+```
+
+Operational `predictions` (genuine and sample) and `synthetic_predictions` are
+reported separately and never merged. An unknown `location_id` returns `404`; an
+out-of-range `days` returns `422`. `models/performance` reads
+`RESEARCH_RUNS_DIR` (default `ml/runs`) and returns `available: false` with a
+reason for any run whose artifacts are absent, so the endpoint degrades honestly
+rather than inventing numbers. The frontend surfaces these at `/admin/analytics`
+and `/admin/model-performance`.
 
 ## Bootstrap the first MET admin for development
 
@@ -721,8 +752,55 @@ This milestone intentionally does not provide:
 - Refresh tokens or token revocation storage
 - Password reset or email verification
 - Account approval audit fields such as `approved_by` or `approved_at`
-- AI, weather, mapping, alert, or reporting functionality
+- Operational prediction ingestion or external notification delivery. Weather
+  observation storage and APIs are now available; see the weather section below.
 
 The React authentication interface uses this backend as its security boundary.
-If future changes add audit columns or other schema fields, introduce Alembic
-before modifying deployed databases.
+Use the existing Alembic migration workflow before modifying deployed schemas.
+
+# Bangladesh historical research API
+
+The separate [research runbook](../docs/RESEARCH_BANGLADESH.md) describes the
+authenticated `/api/predictions/flood-risk` endpoint, public model-info and replay
+reads, model setup and the additional `research_predictions` table. These are
+historical Bangladesh proxy-label results, not validated Fiji forecasts. Run
+`python -m app.db.init_db` after updating to create the research table.
+
+# Synthetic research demonstration API
+
+The isolated synthetic replay and alert-approval demonstration is documented in
+[the synthetic methodology guide](../docs/SYNTHETIC_METHODOLOGY.md). Summary:
+
+- Tables: `synthetic_datasets`, `synthetic_observations`, `synthetic_predictions`,
+  `synthetic_alerts` (Alembic revision `20261019_synthetic`); they are never
+  mixed with operational predictions or alerts.
+- Setup: publish the serving bundle to `ml/artifacts/synthetic/v1/`, run
+  `python -m alembic upgrade head`, then
+  `python -m app.db.import_synthetic --dataset ../ml/data/synthetic_fiji/v1`
+  (checksum- and registry-verified, idempotent).
+- Reads: `GET /api/synthetic/info`, `GET /api/synthetic/frame?timestamp=`
+  (timezone-aware exact hourly timestamps), `GET /api/synthetic/alerts`.
+- Demo writes (require `SYNTHETIC_DEMO_ENABLED=true` and a MET_ADMIN token):
+  `POST /api/synthetic/admin/alerts` (only for HIGH/VERY_HIGH provisional
+  forecasts) and `POST /api/synthetic/admin/alerts/{id}/approve`.
+- Every response carries `source_type: "synthetic"` and a research-demonstration
+  notice. These are simulator outputs, never official Fiji MET readings or
+  emergency warnings.
+
+# Weather observation backend
+
+The weather storage/API and optional standalone ingestion worker are documented in
+[`docs/WEATHER_DATA_MANAGEMENT.md`](../docs/WEATHER_DATA_MANAGEMENT.md).
+Run `.venv/bin/python -m alembic upgrade head` on an existing initialized database
+before using these endpoints. Genuine and synthetic weather are physically separated;
+no external weather provider is configured by default.
+
+## V1 observation-driven prediction generation
+
+`POST /api/predictions/generate` now supports authenticated MET-admin research
+inference from stored synthetic weather, with exact V1 features, immutable provenance,
+and atomic optional PENDING demo-alert creation. The genuine operational path remains
+blocked; the selected model and V1/V2/V3 artifacts are unchanged.
+`GET /api/risk/{location}` is retired (410 Gone), replacing its hardcoded HIGH/0.82.
+See [V1 prediction workflow](../docs/V1_PREDICTION_WORKFLOW.md) for migrations,
+bounded weather imports, source restrictions, example requests and real PostgreSQL tests.

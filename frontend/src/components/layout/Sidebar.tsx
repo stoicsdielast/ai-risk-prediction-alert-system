@@ -55,10 +55,39 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <span>Weather map</span>
           </NavLink>
 
+          <NavLink to="/alerts" onClick={onClose}>
+            <SidebarIcon name="alerts" />
+            <span>Community alerts</span>
+          </NavLink>
+
+          <NavLink to="/simulation" onClick={onClose}>
+            <SidebarIcon name="map" />
+            <span>Synthetic replay</span>
+          </NavLink>
+
+          <NavLink to="/research" onClick={onClose}>
+            <SidebarIcon name="map" />
+            <span>Scenario research</span>
+          </NavLink>
+
           {isAdmin && (
             <NavLink to="/admin/alerts" onClick={onClose}>
               <SidebarIcon name="alerts" />
-              <span>Alerts</span>
+              <span>Manage alerts</span>
+            </NavLink>
+          )}
+
+          {isAdmin && (
+            <NavLink to="/admin/analytics" onClick={onClose}>
+              <SidebarIcon name="analytics" />
+              <span>Prediction analytics</span>
+            </NavLink>
+          )}
+
+          {isAdmin && (
+            <NavLink to="/admin/model-performance" onClick={onClose}>
+              <SidebarIcon name="model" />
+              <span>Model performance</span>
             </NavLink>
           )}
 

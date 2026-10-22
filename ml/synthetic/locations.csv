@@ -1,0 +1,13 @@
+location_id,slug,name,division,latitude,longitude
+1,suva,Suva,CENTRAL,-18.1416,178.4419
+2,nausori,Nausori,CENTRAL,-18.024,178.545
+3,navua,Navua,CENTRAL,-18.2167,178.1667
+4,nadi,Nadi,WESTERN,-17.7765,177.4356
+5,lautoka,Lautoka,WESTERN,-17.6169,177.4505
+6,ba,Ba,WESTERN,-17.534,177.683
+7,sigatoka,Sigatoka,WESTERN,-18.141,177.507
+8,rakiraki,Rakiraki,WESTERN,-17.3833,178.0833
+9,labasa,Labasa,NORTHERN,-16.4306,179.371
+10,savusavu,Savusavu,NORTHERN,-16.7799,179.333
+11,levuka,Levuka,EASTERN,-17.6833,178.8333
+12,vunisea,Vunisea (Kadavu),EASTERN,-19.05,178.1667

@@ -89,5 +89,5 @@ export async function apiRequest<T>(
     throw await errorFromResponse(response)
   }
 
-  return (await response.json()) as T
+  return response.status === 204 ? undefined as T : (await response.json()) as T
 }

@@ -7,7 +7,7 @@ export interface AuthContextValue {
   isLoading: boolean
   sessionError: string | null
   login: (credentials: LoginCredentials) => Promise<User>
-  logout: () => void
+  logout: (reason?: string) => void
   retrySession: () => void
 }
 

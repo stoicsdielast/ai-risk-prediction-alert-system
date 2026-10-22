@@ -1,0 +1,16 @@
+{
+  "authority": "Existing PostgreSQL locations table, read 2026-10-19",
+  "location_count": 12,
+  "database_extensions": [
+    "plpgsql"
+  ],
+  "frontend_map_source": "GET /api/locations; numeric database ID plus existing public slug",
+  "prototype_weather_missing_slugs": [
+    "navua",
+    "rakiraki",
+    "levuka",
+    "vunisea"
+  ],
+  "coordinate_and_seed_discrepancies": [],
+  "synthetic_characteristics": "All hydrological characteristics will be declared simulator assumptions; existing names, divisions, IDs and town-centre coordinates are application metadata."
+}

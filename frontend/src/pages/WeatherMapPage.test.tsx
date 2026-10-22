@@ -1,14 +1,18 @@
 import { render, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { PublicAlertContext } from '../alerts/PublicAlertContext'
 import { ApiError } from '../api/client'
 import { getLocations } from '../api/locations'
-import { PrototypeDataProvider } from '../prototype/PrototypeDataProvider'
+import { getLatestWeather } from '../api/weather'
 import type { ApiLocation, ApiPrediction } from '../types/location'
 import type { MapLocation } from '../types/location'
+import type { ApiLatestWeather } from '../types/weather'
 import { WeatherMapPage } from './WeatherMapPage'
 
 vi.mock('../api/locations', () => ({ getLocations: vi.fn() }))
+vi.mock('../api/weather', () => ({ getLatestWeather: vi.fn() }))
 
 // Leaflet needs real layout, which jsdom does not provide. The page logic is
 // what is under test here, so render markers as a plain list.
@@ -23,6 +27,17 @@ vi.mock('../components/map/WeatherMap', () => ({
 }))
 
 const mockedGetLocations = vi.mocked(getLocations)
+const mockedGetLatestWeather = vi.mocked(getLatestWeather)
+
+function noWeather(locationId: number): ApiLatestWeather {
+  return {
+    location_id: locationId,
+    status: 'no_data',
+    source_type: 'synthetic',
+    notice: null,
+    observation: null,
+  }
+}
 
 function samplePrediction(overrides: Partial<ApiPrediction> = {}): ApiPrediction {
   return {
@@ -37,6 +52,7 @@ function samplePrediction(overrides: Partial<ApiPrediction> = {}): ApiPrediction
 
 const LOCATIONS: ApiLocation[] = [
   {
+    id: 1,
     slug: 'nadi',
     name: 'Nadi',
     division: 'WESTERN',
@@ -46,6 +62,7 @@ const LOCATIONS: ApiLocation[] = [
     prediction: samplePrediction(),
   },
   {
+    id: 2,
     slug: 'navua',
     name: 'Navua',
     division: 'CENTRAL',
@@ -55,6 +72,7 @@ const LOCATIONS: ApiLocation[] = [
     prediction: null,
   },
   {
+    id: 3,
     slug: 'labasa',
     name: 'Labasa',
     division: 'NORTHERN',
@@ -68,23 +86,39 @@ const LOCATIONS: ApiLocation[] = [
   },
 ]
 
-function renderPage() {
+function renderPage(feedOverrides: Record<string, unknown> = {}) {
   return render(
-    <PrototypeDataProvider>
-      <WeatherMapPage />
-    </PrototypeDataProvider>,
+    <MemoryRouter>
+      <PublicAlertContext.Provider
+        value={{
+          data: [],
+          setData: () => {},
+          error: null,
+          refreshing: false,
+          updatedAt: '2026-10-20T00:00:00Z',
+          refresh: () => {},
+          ...feedOverrides,
+        }}
+      >
+        <WeatherMapPage />
+      </PublicAlertContext.Provider>
+    </MemoryRouter>,
   )
 }
 
 function markers() {
   return within(screen.getByRole('list', { name: 'Map markers' }))
-    .getAllByRole('listitem')
+    .queryAllByRole('listitem')
     .map((item) => item.textContent)
 }
 
 describe('WeatherMapPage', () => {
   beforeEach(() => {
     mockedGetLocations.mockReset()
+    mockedGetLatestWeather.mockReset()
+    mockedGetLatestWeather.mockImplementation(async (locationId) =>
+      noWeather(locationId),
+    )
   })
 
   it('shows a loading state and disables filters until locations arrive', () => {
@@ -143,13 +177,24 @@ describe('WeatherMapPage', () => {
     await screen.findByText('3 locations shown')
 
     const details = screen.getByRole('complementary')
-    expect(within(details).getByRole('heading', { name: 'Nadi' })).toBeInTheDocument()
+    expect(await within(details).findByRole('heading', { name: 'Nadi' })).toBeInTheDocument()
     expect(within(details).getByText('Sample risk')).toBeInTheDocument()
     expect(within(details).getByText('Very high flood risk')).toBeInTheDocument()
     expect(within(details).getByText('91% flood probability')).toBeInTheDocument()
     expect(
       within(details).getByText(/Labelled sample for testing/),
     ).toBeInTheDocument()
+  })
+
+  it('fetches the stored weather feed for the selected location', async () => {
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    const details = screen.getByRole('complementary')
+    expect(await within(details).findByText('No observation has been stored for this location yet. Stored demo weather appears here once it has been ingested.')).toBeInTheDocument()
+    expect(mockedGetLatestWeather).toHaveBeenCalledWith(1, 'synthetic', expect.any(AbortSignal))
   })
 
   it('shows "No prediction available" for a location without a prediction', async () => {
@@ -163,6 +208,19 @@ describe('WeatherMapPage', () => {
     expect(within(details).getByRole('heading', { name: 'Navua' })).toBeInTheDocument()
     expect(within(details).getByText('No prediction available')).toBeInTheDocument()
     expect(within(details).queryByText('Sample risk')).not.toBeInTheDocument()
+  })
+
+  it('states that no approved alert is active when the public feed is empty', async () => {
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    const details = screen.getByRole('complementary')
+    expect(
+      await within(details).findByText('No approved community alert is active for this location.'),
+    ).toBeInTheDocument()
+    expect(within(details).queryByText('Official public warning')).not.toBeInTheDocument()
   })
 
   it('filters by risk level, including locations with no prediction', async () => {
@@ -200,5 +258,88 @@ describe('WeatherMapPage', () => {
 
     expect(await screen.findByText('No monitored locations yet')).toBeInTheDocument()
     expect(screen.queryByText('Loading monitored locations…')).not.toBeInTheDocument()
+  })
+
+  it('groups the visible location list under division headings in canonical order', async () => {
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    const list = screen.getByLabelText('Visible monitored locations')
+    expect(
+      within(list)
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent),
+    ).toEqual(['Central Division', 'Western Division', 'Northern Division'])
+  })
+
+  it('filters by division and combines with the risk filter', async () => {
+    const user = userEvent.setup()
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    await user.click(screen.getByRole('button', { name: /^Western/ }))
+    expect(markers()).toEqual(['Nadi'])
+
+    // Low risk exists only in the Northern Division, so the filters combine to
+    // an empty result.
+    await user.click(screen.getByRole('button', { name: /^Low/ }))
+    expect(markers()).toEqual([])
+
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(markers()).toHaveLength(3)
+  })
+
+  it('shows an alerts-feed error banner when approved alerts cannot be loaded', async () => {
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage({ error: 'Cannot reach the alerts feed.' })
+
+    expect(
+      await screen.findByText(/Approved alerts shown here may be out of date/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Cannot reach the alerts feed\./),
+    ).toBeInTheDocument()
+  })
+
+  it('labels a prediction older than 24 hours as stale', async () => {
+    mockedGetLocations.mockResolvedValue(LOCATIONS)
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    const details = screen.getByRole('complementary')
+    expect(await within(details).findByText('Stale')).toBeInTheDocument()
+    expect(
+      within(details).getByText(/more than 24 hours old/),
+    ).toBeInTheDocument()
+  })
+
+  it('does not label a fresh prediction as stale', async () => {
+    mockedGetLocations.mockResolvedValue(
+      LOCATIONS.map((location) =>
+        location.slug === 'nadi'
+          ? {
+              ...location,
+              prediction: samplePrediction({
+                predicted_at: new Date().toISOString(),
+              }),
+            }
+          : location,
+      ),
+    )
+
+    renderPage()
+    await screen.findByText('3 locations shown')
+
+    const details = screen.getByRole('complementary')
+    expect(within(details).queryByText('Stale')).not.toBeInTheDocument()
+    expect(
+      within(details).queryByText(/more than 24 hours old/),
+    ).not.toBeInTheDocument()
   })
 })

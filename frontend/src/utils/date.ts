@@ -18,3 +18,21 @@ export function formatDateTime(value: string): string {
     timeZone: 'Pacific/Fiji',
   }).format(new Date(value))
 }
+
+/**
+ * A stored prediction older than this many hours is shown as stale. Aligned
+ * with the 24-hour horizon of the V1 research model; the client computes this
+ * from `predicted_at` so no backend contract change is needed. Unparseable
+ * timestamps count as stale (freshness cannot be confirmed).
+ */
+export const PREDICTION_STALE_AFTER_HOURS = 24
+
+export function isStaleTimestamp(
+  value: string,
+  afterHours: number = PREDICTION_STALE_AFTER_HOURS,
+  now: number = Date.now(),
+): boolean {
+  const timestamp = new Date(value).getTime()
+  if (Number.isNaN(timestamp)) return true
+  return now - timestamp > afterHours * 3_600_000
+}

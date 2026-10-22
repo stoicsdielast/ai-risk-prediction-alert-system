@@ -1,4 +1,5 @@
-"""Development hook only: no subscription lookup, queue, or notification delivery."""
+"""Post-commit logging hook. Durable queueing lives in notification_outbox (enqueued inside the
+approval transaction); this hook sends nothing and there is no Web Push or service worker."""
 
 import logging
 
@@ -12,6 +13,6 @@ def notify_users_for_approved_alert(alert: Alert) -> None:
         raise ValueError("Notification hooks may only receive approved alerts")
     logger.info(
         "Notification hook invoked for approved alert #%s; "
-        "no delivery provider or subscription service is configured.",
+        "delivery is open-browser polling of the notification outbox only.",
         alert.id,
     )

@@ -67,6 +67,7 @@ class PredictionResponse(BaseModel):
     flood_probability: float
     confidence_percent: float
     model_version: str
+    is_sample: bool
     predicted_at: datetime
 
     @field_validator("predicted_at")
@@ -81,6 +82,7 @@ class AlertResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    is_demo: bool
     location_id: int
     location: LocationResponse
     prediction_id: int | None
@@ -91,8 +93,9 @@ class AlertResponse(BaseModel):
     message: str
     created_at: datetime
     approved_at: datetime | None
+    expires_at: datetime | None
 
-    @field_validator("created_at", "approved_at")
+    @field_validator("created_at", "approved_at", "expires_at")
     @classmethod
     def utc_timestamp(cls, value: datetime | None) -> datetime | None:
         return _utc(value)

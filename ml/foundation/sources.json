@@ -1,0 +1,32 @@
+{
+  "tabfm": {
+    "repository": "https://github.com/google-research/tabfm",
+    "commit": "fbb665569425fd2f490c6576b3af967876fe11ff",
+    "checkpoint": "google/tabfm-1.0.0-pytorch, classification subdirectory",
+    "checkpoint_url": "https://huggingface.co/google/tabfm-1.0.0-pytorch",
+    "code_license": "Apache-2.0",
+    "weight_license": "tabfm-non-commercial-v1.0; non-commercial, non-production use",
+    "context_cap": 100,
+    "python": "ml/envs/tabfm/bin/python"
+  },
+  "tabpfn": {
+    "repository": "https://github.com/PriorLabs/TabPFN",
+    "commit": "417c9877dbfe657afdbe0aee70af2a05ffe4abba",
+    "checkpoint": "Explicit ModelVersion.V2_5, local classification checkpoint; never the moving default",
+    "checkpoint_url": "https://docs.priorlabs.ai/models",
+    "code_license": "Apache-2.0 at the pinned commit; see NOTICE and third-party notices",
+    "weight_license": "TabPFN-2.5 non-commercial license, separately gated by upstream; operator must obtain a permitted checkpoint",
+    "context_cap": 2048,
+    "python": "ml/envs/tabpfn/bin/python"
+  },
+  "tabicl": {
+    "repository": "https://github.com/soda-inria/tabicl",
+    "commit": "c91f00df184a5097e584cb376f7e699e9f3444c4",
+    "checkpoint": "tabicl-classifier-v2-20260212.ckpt",
+    "checkpoint_url": "https://huggingface.co/jingang/TabICL",
+    "code_license": "BSD-3-Clause",
+    "weight_license": "BSD-3-Clause on official model card; retain license notices",
+    "context_cap": 4096,
+    "python": "ml/envs/tabicl/bin/python"
+  }
+}

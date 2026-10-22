@@ -1,0 +1,41 @@
+{
+  "backup_directory": "/home/mohanx13/UNI/cs314/flood-risk-backups/20261019T063327Z",
+  "archive": "/home/mohanx13/UNI/cs314/flood-risk-backups/20261019T063327Z/historical-artifacts.tar.gz",
+  "archive_sha256": "5b66a3853a8c52e0d7d9fb061327ce61dc8129759e9c030b21c404a8fe6bf444",
+  "files_verified": 547,
+  "excluded_files": 92527,
+  "protected_roots": [
+    "ml/runs",
+    "ml/data",
+    "ml/artifacts",
+    "backend/ai/data",
+    "backend/ai/models",
+    "backend/ai/artifacts",
+    "archive.zip",
+    "docs/OVERNIGHT_TEAM_TASKS.docx",
+    "docs/TEAM_TASK_TICKETS.docx",
+    "docs/TEAM_TASK_TICKETS.pdf"
+  ],
+  "verified": true,
+  "backup_commit": "58456574852fec679ea773fa6912d7133c7bccf5",
+  "remote_branch": "origin/parvish-dev",
+  "remote_sha_verified": true,
+  "removed_directories": [
+    "ml/runs/reproduction",
+    "ml/runs/training-01",
+    "ml/runs/training-02",
+    "ml/runs/training-02-reproduction",
+    "ml/runs/training-02-selection-audit",
+    "ml/runs/training-03"
+  ],
+  "preserved": [
+    "ml/artifacts",
+    "ml/data",
+    "ml/envs",
+    "ml/foundation/weights",
+    "ml source and tests",
+    "backend",
+    "frontend",
+    "docs"
+  ]
+}

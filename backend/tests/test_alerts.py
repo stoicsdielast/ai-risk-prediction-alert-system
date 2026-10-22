@@ -1,6 +1,6 @@
 """Alert lifecycle tests use explicitly labelled fixtures, never operational predictions."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from itertools import count
 
 import pytest
@@ -51,7 +51,7 @@ def location(location_factory):
 
 @pytest.fixture
 def prediction_factory(session_factory, location):
-    def create(risk=RiskLevel.HIGH, *, location_id=None):
+    def create(risk=RiskLevel.HIGH, *, location_id=None, is_sample=False):
         # Controlled fixtures exercise threshold branches; no ML results are invented.
         probability = {
             RiskLevel.LOW: 0.1, RiskLevel.MODERATE: 0.3,
@@ -62,6 +62,7 @@ def prediction_factory(session_factory, location):
                 location_id=location_id or location.id, risk_level=risk,
                 flood_probability=probability, model_version="test-fixture-not-an-ml-result",
                 predicted_at=datetime.now(timezone.utc),
+                is_sample=is_sample,
             )
             db.add(prediction)
             db.commit()
@@ -76,6 +77,29 @@ def manual_alert(client, admin, location_id, **extra):
     })
     assert response.status_code == 201, response.text
     return response.json()
+
+
+def test_location_picker_id_supports_persisted_manual_alert_workflow(client, admin, location):
+    locations = client.get("/api/locations").json()
+    selected = next(item for item in locations if item["name"] == location.name)
+    assert selected["id"] == location.id
+    alert = manual_alert(client, admin, selected["id"])
+    url = f"{ADMIN_URL}/{alert['id']}"
+    changed = client.patch(url, headers=authorization(admin), json={
+        "message": "Test-only community warning", "severity": "VERY_HIGH",
+    })
+    assert changed.status_code == 200
+    assert client.get(url, headers=authorization(admin)).json()["message"] == "Test-only community warning"
+    assert client.patch(url + "/approve", headers=authorization(admin)).status_code == 200
+    public = client.get(PUBLIC_URL).json()
+    assert len(public) == 1
+    assert public[0]["location"]["id"] == selected["id"]
+    assert public[0]["severity"] == "VERY_HIGH"
+    assert public[0]["created_at"] and public[0]["approved_at"]
+    assert client.patch(url + "/suppress", headers=authorization(admin), json={
+        "reason": "Test-only withdrawal",
+    }).status_code == 200
+    assert client.get(PUBLIC_URL).json() == []
 
 
 @pytest.mark.parametrize("risk", [RiskLevel.HIGH, RiskLevel.VERY_HIGH])
@@ -109,6 +133,72 @@ def test_lower_risk_prediction_does_not_create_alert(client, admin, prediction_f
     assert response.json() is None
     with session_factory() as db:
         assert db.scalar(select(func.count()).select_from(Alert)) == 0
+
+
+@pytest.mark.parametrize("risk", list(RiskLevel))
+def test_sample_prediction_cannot_create_recommendation(
+    client, admin, prediction_factory, session_factory, risk,
+):
+    prediction = prediction_factory(risk, is_sample=True)
+    response = client.post(f"{ADMIN_URL}/from-prediction/{prediction.id}", headers=authorization(admin))
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Sample predictions cannot be used for alerts"}
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 0
+        assert db.get(Prediction, prediction.id).is_sample is True
+
+
+def test_sample_flag_is_read_from_storage(session_factory, prediction_factory):
+    prediction = prediction_factory(is_sample=True)
+    prediction.is_sample = False
+    with session_factory() as db:
+        with pytest.raises(alert_service.InvalidAlertDataError, match="Sample predictions"):
+            alert_service.create_alert_from_prediction(db, prediction)
+        assert db.scalar(select(func.count()).select_from(Alert)) == 0
+
+
+def test_sample_prediction_cannot_be_attached_to_manual_alert(
+    client, admin, prediction_factory, session_factory,
+):
+    prediction = prediction_factory(is_sample=True)
+    response = client.post(ADMIN_URL, headers=authorization(admin), json={
+        "location_id": prediction.location_id, "prediction_id": prediction.id,
+        "severity": "HIGH", "message": "Test-only sample must not become a warning",
+    })
+    assert response.status_code == 400
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 0
+
+
+@pytest.mark.parametrize("source", list(AlertSource))
+def test_old_sample_alert_cannot_be_approved_or_published(
+    client, admin, prediction_factory, session_factory, monkeypatch, source,
+):
+    prediction = prediction_factory(is_sample=True)
+    calls = []
+    monkeypatch.setattr(notification_service, "notify_users_for_approved_alert", lambda alert: calls.append(alert.id))
+    with session_factory() as db:
+        alert = Alert(
+            location_id=prediction.location_id, prediction_id=prediction.id,
+            severity=RiskLevel.HIGH, source=source, status=AlertStatus.PENDING,
+            message="Test-only legacy sample alert", created_by_user_id=admin.id,
+        )
+        db.add(alert)
+        db.commit()
+        alert_id = alert.id
+    response = client.patch(f"{ADMIN_URL}/{alert_id}/approve", headers=authorization(admin))
+    assert response.status_code == 400
+    assert calls == []
+    with session_factory() as db:
+        alert = db.get(Alert, alert_id)
+        assert alert.status == AlertStatus.PENDING
+        assert alert.approved_at is None
+        # Simulate an alert approved before the sample guard was installed.
+        alert.status = AlertStatus.APPROVED
+        alert.approved_by_user_id = admin.id
+        alert.approved_at = datetime.now(timezone.utc)
+        db.commit()
+    assert client.get(PUBLIC_URL).json() == []
 
 
 def test_repeated_ai_request_reuses_existing_alert(client, admin, prediction_factory, session_factory):
@@ -256,8 +346,8 @@ def test_admin_approval_persists_audit_and_exposes_safe_public_response(
     assert len(public.json()) == 1
     assert public.json()[0]["id"] == alert["id"]
     assert set(public.json()[0]) == {
-        "id", "location_id", "location", "prediction_id", "prediction", "severity",
-        "status", "source", "message", "created_at", "approved_at",
+        "id", "is_demo", "location_id", "location", "prediction_id", "prediction", "severity",
+        "status", "source", "message", "created_at", "approved_at", "expires_at",
     }
     assert set(public.json()[0]["location"]) == {"id", "name"}
     assert "hashed_password" not in public.text
@@ -485,3 +575,129 @@ def test_public_database_failure_returns_safe_error(client, monkeypatch):
     response = client.get(PUBLIC_URL)
     assert response.status_code == 500
     assert response.json() == {"detail": "Unable to process alert request"}
+
+
+def test_approval_sets_expiry_window_from_configured_ttl(client, admin, location):
+    alert = manual_alert(client, admin, location.id)
+    approved = client.patch(f"{ADMIN_URL}/{alert['id']}/approve", headers=authorization(admin)).json()
+    assert approved["expires_at"].endswith("Z")
+    approved_at = datetime.fromisoformat(approved["approved_at"].replace("Z", "+00:00"))
+    expires_at = datetime.fromisoformat(approved["expires_at"].replace("Z", "+00:00"))
+    assert timedelta(hours=23, minutes=59) <= expires_at - approved_at <= timedelta(hours=24, minutes=1)
+
+
+def test_expired_approved_alert_is_hidden_publicly_but_kept_for_admin(
+    client, admin, location, session_factory,
+):
+    alert = manual_alert(client, admin, location.id)
+    client.patch(f"{ADMIN_URL}/{alert['id']}/approve", headers=authorization(admin))
+    assert len(client.get(PUBLIC_URL).json()) == 1
+    with session_factory() as db:
+        stored = db.get(Alert, alert["id"])
+        stored.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+        db.commit()
+    assert client.get(PUBLIC_URL).json() == []
+    detail = client.get(f"{ADMIN_URL}/{alert['id']}", headers=authorization(admin))
+    assert detail.status_code == 200
+    assert detail.json()["status"] == "APPROVED"
+    assert detail.json()["expires_at"].endswith("Z")
+
+
+def test_repeated_same_severity_event_reuses_active_alert(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    repeated = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert repeated["id"] == created["id"]
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 1
+
+
+def test_severity_escalation_creates_new_alert_during_cooldown(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.VERY_HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    escalated = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert escalated["id"] != created["id"]
+    assert escalated["severity"] == "VERY_HIGH"
+    assert escalated["prediction_id"] == second.id
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 2
+
+
+def test_cooldown_window_allows_new_alert_after_expiry_of_window(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    with session_factory() as db:
+        stored = db.get(Alert, created["id"])
+        stored.created_at = datetime.now(timezone.utc) - timedelta(hours=7)
+        db.commit()
+    fresh = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert fresh["id"] != created["id"]
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 2
+
+
+def test_rejected_alert_does_not_block_a_new_recommendation(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    assert client.patch(f"{ADMIN_URL}/{created['id']}/reject", headers=authorization(admin)).status_code == 200
+    fresh = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert fresh["id"] != created["id"]
+    assert fresh["status"] == "PENDING"
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 2
+
+
+def test_suppressed_alert_blocks_non_escalating_recommendation(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    assert client.patch(f"{ADMIN_URL}/{created['id']}/suppress", headers=authorization(admin), json={
+        "reason": "Test-only withdrawal",
+    }).status_code == 200
+    repeated = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert repeated["id"] == created["id"]
+    assert repeated["status"] == "SUPPRESSED"
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 1
+
+
+def test_expired_alert_does_not_block_a_new_recommendation(
+    client, admin, prediction_factory, session_factory,
+):
+    first = prediction_factory(risk=RiskLevel.HIGH)
+    second = prediction_factory(risk=RiskLevel.HIGH)
+    created = client.post(f"{ADMIN_URL}/from-prediction/{first.id}", headers=authorization(admin)).json()
+    client.patch(f"{ADMIN_URL}/{created['id']}/approve", headers=authorization(admin))
+    with session_factory() as db:
+        stored = db.get(Alert, created["id"])
+        stored.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+        db.commit()
+    fresh = client.post(f"{ADMIN_URL}/from-prediction/{second.id}", headers=authorization(admin)).json()
+    assert fresh["id"] != created["id"]
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 2
+
+
+def test_manual_alert_is_not_blocked_by_ai_cooldown(
+    client, admin, prediction_factory, session_factory,
+):
+    prediction = prediction_factory(risk=RiskLevel.HIGH)
+    client.post(f"{ADMIN_URL}/from-prediction/{prediction.id}", headers=authorization(admin))
+    manual = manual_alert(client, admin, prediction.location_id)
+    assert manual["status"] == "PENDING"
+    with session_factory() as db:
+        assert db.scalar(select(func.count()).select_from(Alert)) == 2

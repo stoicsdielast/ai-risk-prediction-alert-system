@@ -2,16 +2,18 @@
 
 import logging
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
+
 from app.models.alert import Alert, AlertSource, AlertStatus
 from app.models.location import Location
-from app.models.prediction import Prediction
+from app.models.prediction import ALERT_DEMO_MODEL_PREFIX, Prediction
 from app.models.risk import RiskLevel
 from app.models.user import User
 from app.schemas.alert import AlertSuppressionRequest, AlertUpdate, ManualAlertCreate
@@ -20,6 +22,15 @@ from app.services import notification_service
 logger = logging.getLogger(__name__)
 
 HIGH_RISK_LEVELS = frozenset({RiskLevel.HIGH, RiskLevel.VERY_HIGH})
+SEVERITY_RANK = {
+    RiskLevel.LOW: 0,
+    RiskLevel.MODERATE: 1,
+    RiskLevel.HIGH: 2,
+    RiskLevel.VERY_HIGH: 3,
+}
+COOLDOWN_STATUSES = frozenset({
+    AlertStatus.PENDING, AlertStatus.APPROVED, AlertStatus.SUPPRESSED,
+})
 ALLOWED_TRANSITIONS = {
     AlertStatus.PENDING: frozenset({AlertStatus.APPROVED, AlertStatus.REJECTED, AlertStatus.SUPPRESSED}),
     AlertStatus.APPROVED: frozenset({AlertStatus.SUPPRESSED}),
@@ -100,6 +111,11 @@ def _prediction(db: Session, prediction_id: int) -> Prediction:
     return prediction
 
 
+def _require_real_prediction(prediction: Prediction) -> None:
+    if prediction.is_sample and not (get_settings().alert_demo_enabled and prediction.is_alert_demo):
+        raise InvalidAlertDataError("Sample predictions cannot be used for alerts")
+
+
 def _get_alert(db: Session, alert_id: int, *, lock: bool = False) -> Alert:
     query = select(Alert).where(Alert.id == alert_id).execution_options(populate_existing=True)
     if lock:
@@ -114,6 +130,22 @@ def _existing_alert(db: Session, prediction: Prediction) -> Alert | None:
     return db.scalar(select(Alert).where(
         Alert.location_id == prediction.location_id, Alert.prediction_id == prediction.id,
     ).execution_options(populate_existing=True))
+
+
+def _recent_location_alert(db: Session, location_id: int) -> Alert | None:
+    """Most recent unexpired alert that should suppress a repeated-event alert."""
+    cooldown_hours = get_settings().alert_cooldown_hours
+    if cooldown_hours <= 0:
+        return None
+    now = datetime.now(timezone.utc)
+    return db.scalar(
+        select(Alert).where(
+            Alert.location_id == location_id,
+            Alert.status.in_(COOLDOWN_STATUSES),
+            Alert.created_at > now - timedelta(hours=cooldown_hours),
+            or_(Alert.expires_at.is_(None), Alert.expires_at > now),
+        ).order_by(Alert.created_at.desc(), Alert.id.desc()).limit(1)
+    )
 
 
 def _duplicate_prediction_alert(error: IntegrityError) -> bool:
@@ -131,27 +163,40 @@ def ensure_transition(alert: Alert, target: AlertStatus) -> None:
 
 
 @_database_operation
-def create_alert_from_prediction(db: Session, prediction: Prediction) -> Alert | None:
+def create_alert_from_prediction(db: Session, prediction: Prediction, *, research_actor_id: int | None = None):
     """Flush, but do not commit: caller can persist prediction + alert atomically.
 
     Pass a saved/flushed Prediction from this session. The persisted row is
     locked/re-read so caller-supplied or stale risk/location values aren't trusted.
     A reviewed historical alert is also reused; retries never revive it.
     """
+    # Synthetic rows never enter the operational lookup, constraints or notification hook.
+    # Preserve the existing operational contract while sharing the flush-only entrypoint.
+    from app.models.synthetic import SyntheticPrediction
+    if isinstance(prediction, SyntheticPrediction):
+        from app.services.synthetic_alert_service import create_pending
+        return create_pending(db, prediction, research_actor_id)
     if prediction.id is None:
         raise InvalidAlertDataError("Save and flush the prediction before creating its alert")
     stored = _prediction(db, prediction.id)
+    _require_real_prediction(stored)
     if stored.risk_level not in HIGH_RISK_LEVELS:
         return None
     existing = _existing_alert(db, stored)
     if existing is not None:
         return existing
     location = _active_location(db, stored.location_id)
+    if not stored.is_sample:
+        # Repeated-event cooldown: reuse the active alert unless severity escalates.
+        recent = _recent_location_alert(db, location.id)
+        if recent is not None and SEVERITY_RANK[stored.risk_level] <= SEVERITY_RANK[recent.severity]:
+            return recent
     alert = Alert(
         location_id=location.id, prediction_id=stored.id,
         severity=stored.risk_level, status=AlertStatus.PENDING,
         source=AlertSource.AI_RECOMMENDATION,
         message=(
+            ("DEMO ONLY — simulated prediction; not an official Fiji MET warning. " if stored.is_alert_demo else "") +
             f"AI-generated flood-risk recommendation for {location.name}: "
             f"{stored.risk_level.value.replace('_', ' ').lower()} risk. "
             "This recommendation is for Fiji MET review."
@@ -184,6 +229,7 @@ def create_manual_alert(db: Session, data: ManualAlertCreate, admin: User) -> Al
     # Keep the same lock ordering as automatic creation (prediction before location).
     if data.prediction_id is not None:
         prediction = _prediction(db, data.prediction_id)
+        _require_real_prediction(prediction)
         if prediction.location_id != data.location_id:
             raise InvalidAlertDataError("Prediction belongs to a different location")
         if _existing_alert(db, prediction) is not None:
@@ -239,6 +285,8 @@ def update_alert(db: Session, alert_id: int, data: AlertUpdate, admin: User) -> 
 def approve_alert(db: Session, alert_id: int, admin: User) -> Alert:
     alert = _get_alert(db, alert_id, lock=True)
     ensure_transition(alert, AlertStatus.APPROVED)
+    if alert.prediction_id is not None:
+        _require_real_prediction(_prediction(db, alert.prediction_id))
     _active_location(db, alert.location_id)
     if not isinstance(alert.message, str) or not alert.message.strip() or len(alert.message) > 4000:
         raise InvalidAlertDataError("Alert requires a nonblank message of at most 4000 characters")
@@ -249,6 +297,9 @@ def approve_alert(db: Session, alert_id: int, admin: User) -> Alert:
     alert.status = AlertStatus.APPROVED
     alert.approved_by_user_id = admin.id
     alert.approved_at = datetime.now(timezone.utc)
+    alert.expires_at = alert.approved_at + timedelta(hours=get_settings().alert_ttl_hours)
+    from app.services.notification_outbox import enqueue
+    enqueue(db, alert)
     db.commit()
     # This development hook runs only after successful persistence; it sends nothing.
     try:
@@ -285,8 +336,19 @@ def suppress_alert(
 
 @_database_operation
 def get_public_alerts(db: Session, *, offset: int = 0, limit: int = 100) -> list[Alert]:
+    allowed_prediction = ~Alert.prediction.has(Prediction.is_sample.is_(True))
+    if get_settings().alert_demo_enabled:
+        allowed_prediction = or_(allowed_prediction, Alert.prediction.has(and_(
+            Prediction.is_sample.is_(True),
+            Prediction.model_version.startswith(ALERT_DEMO_MODEL_PREFIX),
+        )))
     return list(db.scalars(
         select(Alert).join(Location, Alert.location_id == Location.id)
-        .where(Alert.status == AlertStatus.APPROVED, Location.is_active.is_(True))
+        .where(
+            Alert.status == AlertStatus.APPROVED,
+            Location.is_active.is_(True),
+            or_(Alert.expires_at.is_(None), Alert.expires_at > datetime.now(timezone.utc)),
+        )
+        .where(allowed_prediction)
         .order_by(Alert.approved_at.desc(), Alert.id.desc()).offset(offset).limit(limit)
     ))

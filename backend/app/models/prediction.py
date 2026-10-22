@@ -18,6 +18,8 @@ from app.db.base import Base
 from app.models.location import Location
 from app.models.risk import RiskLevel, risk_level_enum
 
+ALERT_DEMO_MODEL_PREFIX = "alert-workflow-demo-v1-"
+
 
 class Prediction(Base):
     __tablename__ = "predictions"
@@ -46,6 +48,11 @@ class Prediction(Base):
         Boolean, nullable=False, default=False, server_default=text("false"),
     )
     location: Mapped[Location] = relationship()
+
+    @property
+    def is_alert_demo(self) -> bool:
+        """An explicitly simulated workflow result; never a trained-model result."""
+        return self.is_sample and self.model_version.startswith(ALERT_DEMO_MODEL_PREFIX)
 
     @property
     def confidence_percent(self) -> float:

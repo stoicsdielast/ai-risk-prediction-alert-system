@@ -1,5 +1,33 @@
 # Frontend Prototype: Architecture, Setup, and Demo Guide
 
+## Verified implementation update — 20 October 2026
+
+The guide below is retained as a **historical baseline**; several sections still
+describe the earlier prototype-data era. The current verified live-vs-demo
+boundary after the dashboard-integration work is:
+
+| Area | Current source | Persistent? | Status |
+| --- | --- | --- | --- |
+| Registration, login, and current user | FastAPI + PostgreSQL | Yes | Live |
+| Pending-account list and account approval/rejection | FastAPI + PostgreSQL | Yes | Live |
+| Community account overview | Current user returned by FastAPI | Yes | Live auth data |
+| Monitored locations (map list, registry metrics) | `GET /api/locations` | Yes | Live backend |
+| Flood-risk markers and prediction panel | `GET /api/locations` joined predictions | Yes | Live backend; `is_sample` rows labelled as test data |
+| Weather observations on the map detail card | `GET /api/weather/latest?dataset=synthetic` | Yes | Live backend storage; always labelled synthetic demo data with the research notice |
+| MET dashboard metrics and recent predictions | Derived from the live location registry | Yes | Live backend |
+| Community alert feed and MET alert management | `/api/alerts/active`, `/api/admin/alerts*` | Yes | Live backend |
+| Official Fiji MET warnings | Not part of this system | — | Never shown; the map shows approved community alerts only, with a precedence note |
+| `/research` synthetic scenario study | Read-only FastAPI + published research bundles | No (bundles on disk) | Research only |
+| OpenStreetMap basemap | Public internet tile service | External tiles only | Visual context |
+
+Removed in this update: `src/data/prototypeData.ts`, `src/prototype/`
+(`PrototypeDataProvider`, `usePrototypeData`), the fabricated "official warning"
+strings, and all `GET /api/risk/{location}` placeholder behaviour (the backend
+endpoint now returns 410). The remainder of this document describes the
+pre-removal prototype and should be read with that correction in mind.
+
+---
+
 This guide explains how the current FloodWatch Fiji frontend prototype works,
 how to run it, and which parts are connected to the FastAPI/PostgreSQL backend.
 It is intended for development, demonstrations, and university-project review.
@@ -21,6 +49,7 @@ flood-operation screens. The badges in the workspace help identify the source:
 | Flood-risk levels and AI predictions | `prototypeData.ts` | No | Demo data |
 | MET operational dashboard metrics | Derived from local prototype data | No | Demo data |
 | Flood-alert list and alert actions | React prototype state | No | Demo workflow |
+| `/research` synthetic scenario study | Read-only FastAPI + published research bundles | No (bundles on disk) | Research only |
 | OpenStreetMap basemap | Public internet tile service | External tiles only | Visual context |
 
 The prototype weather values, risk levels, predictions, alert messages, and
@@ -72,6 +101,7 @@ Browser
 | `/admin/dashboard` | Approved `MET_ADMIN` | Local demo data | Operational summary and recent activity |
 | `/admin/alerts` | Approved `MET_ADMIN` | Local in-memory data | Demonstrate an alert-review workflow |
 | `/admin/users/pending` | Approved `MET_ADMIN` | Live admin API | Approve or reject actual registered accounts |
+| `/research` | Authenticated (any role) | Live read-only research API | Synthetic scenario study, research only |
 
 Authenticated users visiting a public authentication page are redirected to
 their workspace. A `MET_ADMIN` goes to `/admin/dashboard`; a community user goes
@@ -163,6 +193,31 @@ These alert actions:
 
 This is different from `/admin/users/pending`: account approval and rejection
 on that page are real backend operations and persist in PostgreSQL.
+
+### Synthetic research view (research only, nothing promoted)
+
+`/research` is a lecturer-facing, read-only view of the synthetic scenario study
+documented in [docs/SYNTHETIC_V3_RESULTS.md](SYNTHETIC_V3_RESULTS.md). It calls
+`GET /api/synthetic/research/{info,frame,storms,series}`, which serve published
+research bundles from `SYNTHETIC_RESEARCH_DIR` (default
+`ml/artifacts/synthetic/v3`) with no database writes and no path into alert
+creation.
+
+- Scenario selector lists the controlled, realistic, and stress scenarios;
+  unpublished scenarios are disabled.
+- The frame table shows all 12 monitored locations for a chosen hour: simulated
+  weather, provisional probability and risk band, and (display-only) evaluation
+  labels under `Ground truth …` column titles.
+- Storm replay lists simulated storms and, per selected location, a timeline of
+  alarm episodes against onsets.
+
+Ground truth is served only from a separate `research_truth.parquet` under the
+`ground_truth` key with `research_view_only: true`; the scorer never receives
+labels. Every response carries `source_type: synthetic` and a
+research-demonstration notice. This page is not a Fiji MET forecast, not an
+operational dashboard, and shares nothing with the deployed V1 serving path
+(`/api/synthetic/*`), the alert demo, or notifications. The badge on the page
+reads **Synthetic Data — Research Demonstration**.
 
 ## Map tiles and internet access
 
@@ -401,6 +456,10 @@ browser testing.
 The prototype UI should not be considered complete until real, authorized APIs
 and persistence replace the local data provider. Future work includes:
 
+The [Alert System backend](ALERT_SYSTEM.md) now implements persisted drafts,
+administrator review, suppression, and public approved alerts. The frontend
+continues to use its local demo provider; connecting that page remains pending.
+
 | Capability | Current prototype | Future backend need |
 | --- | --- | --- |
 | Weather observations | Hard-coded local records | Ingestion and read API with source/update metadata |
@@ -408,16 +467,16 @@ and persistence replace the local data provider. Future work includes:
 | Flood predictions | Illustrative labels/confidence | Model pipeline, persisted runs, horizons, and read API |
 | Official warnings | Illustrative strings | Authoritative warning source and clearly separated API |
 | Dashboard metrics | Calculated in the browser | Authorized aggregate/summary endpoint |
-| Alert listing | Local array | Persisted alert model and admin list/detail endpoints |
-| Alert review actions | In-memory state change | Server-side status transitions, `MET_ADMIN` authorization, and validation |
+| Alert listing | Local array | Backend list/detail endpoints implemented; frontend connection pending |
+| Alert review actions | In-memory state change | Backend transitions, `MET_ADMIN` authorization, and validation implemented; frontend connection pending |
 | Alert delivery | Not implemented | Audience/channel delivery, retries, and delivery status |
-| Operational audit | Not implemented | Reviewer, timestamps, reason, and immutable audit trail |
+| Operational audit | Not shown in frontend | Backend actor/time/reason fields implemented; complete immutable history remains pending |
 
 The existing `GET /api/risk/{location}` route in `backend/app/main.py` returns a
 fixed placeholder response. The frontend prototype does not call it, and it is
 not a substitute for the future prediction APIs.
 
-A small, coherent future HTTP contract could be:
+The implemented alert routes and proposed remaining frontend contracts include:
 
 ```text
 GET   /api/locations
@@ -433,10 +492,9 @@ PATCH /api/admin/alerts/{alert_id}/reject
 PATCH /api/admin/alerts/{alert_id}/suppress
 ```
 
-These are proposed contracts, not implemented routes. The admin endpoints must
-reuse the backend's approved-and-active `MET_ADMIN` dependency. Operational
-alert statuses must use a separate domain enum from user account approval
-statuses, even though some labels overlap.
+The alert routes in this list are implemented; the other domain routes remain
+proposals. Alert administrator endpoints reuse the backend's approved-and-active
+`MET_ADMIN` dependency and use a separate alert status enum from account approval.
 
 When the real APIs are added:
 
