@@ -9,6 +9,8 @@ import { useLocations } from '../locations/useLocations'
 import type { ApiLocation } from '../types/location'
 import { formatRelativeTime } from '../utils/date'
 import { SyntheticReplayPanel } from '../components/research/SyntheticReplayPanel'
+import { AlertProvenance } from '../components/alerts/AlertProvenance'
+import { isSimulatedAlert } from '../alerts/provenance'
 
 function MetricIcon({ name }: { name: 'locations' | 'active' | 'pending' | 'risk' }) {
   if (name === 'locations') {
@@ -110,8 +112,8 @@ export function AdminDashboardPage() {
     <div className="prototype-page dashboard-page">
       <PageHeader
         eyebrow="MET operations"
-        title="Flood risk overview"
-        description="Review live alert activity, stored observations and latest predictions from the backend."
+        title="Flood risk dashboard"
+        description="Monitor flood risk predictions, review alert activity and explore weather analysis across Fiji."
       />
 
       <AlertFeedStatus
@@ -126,8 +128,6 @@ export function AdminDashboardPage() {
           Monitored-location metrics are unavailable. {locationsError}
         </Alert>
       )}
-
-      <SyntheticReplayPanel />
 
       <section className="metric-grid" aria-label="Operational summary">
         <SummaryCard
@@ -146,7 +146,7 @@ export function AdminDashboardPage() {
         <SummaryCard
           label="Active alerts"
           value={publicFeed.data && !publicFeed.error ? activeAlerts.length : '–'}
-          detail="Approved for public use"
+          detail={activeAlerts.some(isSimulatedAlert) ? 'Includes labelled simulated alerts' : 'Published community alerts'}
           icon={<MetricIcon name="active" />}
           tone="teal"
         />
@@ -160,11 +160,15 @@ export function AdminDashboardPage() {
         <SummaryCard
           label="High-risk areas"
           value={locationsReady ? highRiskLocations.length : '–'}
-          detail="High or very high latest risk"
+          detail={locations.some((location) => location.prediction?.is_sample)
+            ? 'Includes labelled sample predictions'
+            : 'High or very high latest risk'}
           icon={<MetricIcon name="risk" />}
           tone="red"
         />
       </section>
+
+      <SyntheticReplayPanel />
 
       <section className="dashboard-grid" aria-label="Latest operational activity">
         <article className="prototype-panel recent-alerts-panel">
@@ -196,6 +200,7 @@ export function AdminDashboardPage() {
                       <strong>{alert.location.name}</strong>
                       <RiskPill risk={alert.severity} compact />
                     </div>
+                    <AlertProvenance alert={alert} />
                     <p>{alert.message}</p>
                     <small>
                       #{alert.id} · {formatRelativeTime(alert.created_at)}
@@ -247,6 +252,7 @@ export function AdminDashboardPage() {
                       label={`${Math.round(location.prediction.flood_probability * 100)}% probability`}
                       compact
                     />
+                    {location.prediction.is_sample && <span className="source-indicator">Sample prediction</span>}
                     <time dateTime={location.prediction.predicted_at}>
                       {formatRelativeTime(location.prediction.predicted_at)}
                     </time>

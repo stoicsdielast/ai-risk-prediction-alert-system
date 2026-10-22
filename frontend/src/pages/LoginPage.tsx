@@ -142,7 +142,7 @@ export function LoginPage() {
         </div>
 
         <p className="login-brand-panel__footer">
-          FloodWatch Fiji · University project prototype
+          FloodWatch Fiji · Flood monitoring & community alerts
         </p>
       </section>
 

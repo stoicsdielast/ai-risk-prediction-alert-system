@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
-import { PrototypeBadge } from './PrototypeBadge'
+import { DataSourceStatus } from './DataSourceStatus'
 import { Sidebar } from './Sidebar'
 import { PublicAlertProvider } from '../../alerts/PublicAlertProvider'
 import { BrowserAlertControl } from '../alerts/BrowserAlertControl'
@@ -11,19 +11,8 @@ export function WorkspaceLayout() {
   const { user } = useAuth()
   const location = useLocation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const usesLiveAuthData =
-    location.pathname === '/dashboard' ||
-    location.pathname === '/admin/users/pending'
-
-  const dataBadge = usesLiveAuthData ? (
-    <span className="live-api-badge">
-      <span aria-hidden="true" /> Live auth API
-    </span>
-  ) : location.pathname === '/alerts' || location.pathname === '/admin/alerts' ? (
-    <span className="live-api-badge"><span aria-hidden="true" /> Live alerts</span>
-  ) : (
-    <PrototypeBadge />
-  )
+  const syntheticView = ['/simulation', '/research'].includes(location.pathname)
+  const dataBadge = <DataSourceStatus key={location.pathname} synthetic={syntheticView} />
 
   return (
     <PublicAlertProvider>

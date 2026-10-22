@@ -10,7 +10,7 @@ from app.db.session import get_db
 from app.models.alert import AlertStatus
 from app.models.user import User
 from app.schemas.alert import (
-    AlertDetailResponse, AlertResponse, AlertSuppressionRequest, AlertUpdate, ManualAlertCreate,
+    AlertClosureRequest, AlertDetailResponse, AlertResponse, AlertSuppressionRequest, AlertUpdate, ManualAlertCreate,
 )
 from app.services import alert_demo_service, alert_service
 from app.core.config import get_settings
@@ -133,3 +133,20 @@ def public_active_alerts(
             db, offset=offset, limit=limit,
         )
     ])
+
+
+@admin_router.patch("/{alert_id}/acknowledge", response_model=AlertDetailResponse)
+def acknowledge_alert(alert_id: int, db: Session = Depends(get_db), admin: User = Depends(require_met_admin)):
+    return _service_call(lambda: AlertDetailResponse.model_validate(alert_service.acknowledge_alert(db, alert_id, admin)))
+
+
+@admin_router.patch("/{alert_id}/resolve", response_model=AlertDetailResponse)
+def resolve_alert(alert_id: int, data: AlertClosureRequest, db: Session = Depends(get_db), admin: User = Depends(require_met_admin)):
+    return _service_call(lambda: AlertDetailResponse.model_validate(
+        alert_service.close_alert(db, alert_id, data, admin, target=AlertStatus.RESOLVED)))
+
+
+@admin_router.patch("/{alert_id}/cancel", response_model=AlertDetailResponse)
+def cancel_alert(alert_id: int, data: AlertClosureRequest, db: Session = Depends(get_db), admin: User = Depends(require_met_admin)):
+    return _service_call(lambda: AlertDetailResponse.model_validate(
+        alert_service.close_alert(db, alert_id, data, admin, target=AlertStatus.CANCELLED)))

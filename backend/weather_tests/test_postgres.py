@@ -11,7 +11,7 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, select, text
+from sqlalchemy import MetaData, Enum, create_engine, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
@@ -41,11 +41,19 @@ def postgres(monkeypatch):
         # Existing operational baseline is create_all; both versioned migrations are real.
         tables = [table for table in Base.metadata.sorted_tables
                   if not table.name.startswith(("synthetic_", "weather_", "demo_weather_", "v1_weather_", "generated_prediction_", "notification_", "saved_locations"))]
-        Base.metadata.create_all(engine, tables=tables)
-        # create_all builds operational tables at their current shape, so remove
-        # columns added by later ordered migrations before replaying them.
-        with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE alerts DROP COLUMN expires_at"))
+        # Reconstruct the pre-migration baseline, including the original enum.
+        baseline = MetaData()
+        for table in tables:
+            table.to_metadata(baseline)
+        alert_table = baseline.tables["alerts"]
+        later_columns = {"expires_at", "acknowledged_at", "acknowledged_by_user_id", "closed_at", "closed_by_user_id", "closure_reason"}
+        for constraint in list(alert_table.constraints):
+            if constraint.name in ("ck_alert_closure_audit", "ck_alert_acknowledgement_audit") or any(column.name in later_columns for column in constraint.columns):
+                alert_table.constraints.remove(constraint)
+        for name in later_columns:
+            alert_table._columns.remove(alert_table.c[name])
+        alert_table.c.status.type = Enum("PENDING", "APPROVED", "REJECTED", "SUPPRESSED", name="alert_status")
+        baseline.create_all(engine)
         monkeypatch.setattr(sessions, "get_engine", lambda: engine)
         command.upgrade(Config("alembic.ini"), "head")
         factory = sessionmaker(engine, expire_on_commit=False)
@@ -61,8 +69,8 @@ def postgres(monkeypatch):
                 yield db
         app.dependency_overrides[sessions.get_db] = database
         yield engine, factory, {"Authorization": f"Bearer {token}"}
-        command.downgrade(Config("alembic.ini"), "20261019_synthetic")
-        command.upgrade(Config("alembic.ini"), "head")
+        # Individual migration tests cover rollback. Teardown only drops this
+        # disposable schema, including records whose audit correctly blocks downgrade.
     finally:
         app.dependency_overrides.clear()
         engine.dispose()

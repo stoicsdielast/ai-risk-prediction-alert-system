@@ -48,6 +48,10 @@ class AlertSuppressionRequest(AlertInput):
     reason: str = Field(min_length=1, max_length=1000)
 
 
+class AlertClosureRequest(AlertInput):
+    reason: str = Field(min_length=1, max_length=1000)
+
+
 class LocationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -114,8 +118,13 @@ class AlertDetailResponse(AlertResponse):
     suppression_reason: str | None
     suppressed_by_user_id: int | None
     suppressed_at: datetime | None
+    acknowledged_by_user_id: int | None
+    acknowledged_at: datetime | None
+    closed_by_user_id: int | None
+    closed_at: datetime | None
+    closure_reason: str | None
 
-    @field_validator("updated_at", "rejected_at", "suppressed_at")
+    @field_validator("updated_at", "rejected_at", "suppressed_at", "acknowledged_at", "closed_at")
     @classmethod
     def utc_audit_timestamp(cls, value: datetime | None) -> datetime | None:
         return _utc(value)

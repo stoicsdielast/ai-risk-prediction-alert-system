@@ -1,7 +1,7 @@
 """Synthetic weather replay and isolated approval demonstration."""
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict, field_validator
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -12,6 +12,8 @@ from app.models.location import Location
 from app.models.synthetic import SyntheticDataset, SyntheticObservation, SyntheticPrediction, SyntheticAlert
 from app.models.user import User
 from app.services.synthetic_inference import NOTICE, load_synthetic_model
+from app.services.synthetic_alert_service import create_pending
+from app.schemas.alert import AlertClosureRequest, _utc
 
 router=APIRouter(prefix='/api/synthetic',tags=['synthetic research demonstration'])
 VERSION='synthetic-fiji-v1'
@@ -58,8 +60,9 @@ def frame(timestamp:datetime,db:Session=Depends(get_db),model=Depends(get_synthe
 
 class AlertRequest(BaseModel):
     model_config=ConfigDict(extra='forbid')
-    location_id:int
+    location_id:int = Field(gt=0)
     timestamp:datetime
+    test_alert:bool = Field(default=False, strict=True)
 
     @field_validator('timestamp')
     @classmethod
@@ -68,44 +71,54 @@ class AlertRequest(BaseModel):
         return value
 
 
-def alert_json(db,alert):
+def alert_json(db,alert,*,admin=False):
     prediction=db.get(SyntheticPrediction,alert.prediction_id);location=db.get(Location,prediction.location_id)
-    return {'id':alert.id,'prediction_id':prediction.id,'status':alert.status,'source_type':'synthetic','notice':NOTICE,
+    result = {'id':alert.id,'prediction_id':prediction.id,'status':alert.status,'source_type':'synthetic','notice':NOTICE,'is_test':alert.is_test,
         'location_id':location.id,'slug':location.slug,'location_name':location.name,'risk_category':prediction.risk_category,
-        'probability':prediction.probability,'timestamp':prediction.observed_at.isoformat(),'horizon_hours':24,
-        'model_version':prediction.model_version,'message':f'{NOTICE}: provisional {prediction.risk_category} risk for {location.name}. No emergency warning.',
-        'reviewed_at':alert.reviewed_at.isoformat() if alert.reviewed_at else None}
+        'probability':prediction.probability,'timestamp':_utc(prediction.observed_at).isoformat(),'horizon_hours':24,
+        'model_version':prediction.model_version,'message':f'{NOTICE}: {"TEST ALERT — " if alert.is_test else ""}provisional {prediction.risk_category} risk for {location.name}. No emergency warning.',
+        'reviewed_at':_utc(alert.reviewed_at).isoformat() if alert.reviewed_at else None}
+    if admin:
+        result.update(created_by=alert.created_by, created_at=_utc(alert.created_at), reviewed_by=alert.reviewed_by,
+            acknowledged_by=alert.acknowledged_by, acknowledged_at=_utc(alert.acknowledged_at),
+            closed_by=alert.closed_by, closed_at=_utc(alert.closed_at), closure_reason=alert.closure_reason)
+    return result
 
 
 @router.post('/admin/alerts',status_code=201)
 def create_alert(data:AlertRequest,db:Session=Depends(get_db),user:User=Depends(require_met_admin),model=Depends(get_synthetic_model)):
     if not get_settings().synthetic_demo_enabled:raise HTTPException(403,'Synthetic alert demonstration is disabled')
-    timestamp=timestamp_utc(data.timestamp);location=db.get(Location,data.location_id)
+    timestamp=timestamp_utc(data.timestamp)
+    # Serialize creation for this location, including first prediction insertion.
+    location=db.scalar(select(Location).where(Location.id==data.location_id).with_for_update())
     if location is None or not location.is_active:raise HTTPException(404,'Unknown active map location')
     observation=db.get(SyntheticObservation,(VERSION,location.id,timestamp))
     if observation is None:raise HTTPException(404,'Synthetic weather has not been imported for this timestamp')
     try:result=model.predict(location.id,timestamp)
     except ValueError as exc:raise HTTPException(422,str(exc)) from exc
-    if result['status']!='ok' or result['risk_category'] not in ['HIGH','VERY_HIGH']:raise HTTPException(422,'Only eligible HIGH/VERY_HIGH synthetic forecasts can create pending alerts')
+    if (result['status']!='ok' or result.get('risk_category') not in ['LOW','MODERATE','HIGH','VERY_HIGH']
+        or result.get('probability') is None or not 0 <= result['probability'] <= 1):
+        raise HTTPException(422,'A complete eligible synthetic forecast is required, including for test alerts')
+    if result['risk_category'] not in ['HIGH','VERY_HIGH'] and not data.test_alert:
+        raise HTTPException(422,'LOW/MODERATE forecasts require an explicitly marked isolated test alert')
     prediction=db.scalar(select(SyntheticPrediction).where(SyntheticPrediction.dataset_version==VERSION,SyntheticPrediction.location_id==location.id,
         SyntheticPrediction.observed_at==timestamp,SyntheticPrediction.model_version==result['model_version']))
     if prediction is None:
         prediction=SyntheticPrediction(dataset_version=VERSION,location_id=location.id,observed_at=timestamp,model_version=result['model_version'],probability=result['probability'],risk_category=result['risk_category'])
         db.add(prediction);db.flush()
-    existing=db.scalar(select(SyntheticAlert).where(SyntheticAlert.prediction_id==prediction.id))
-    if existing:return alert_json(db,existing)
-    alert=SyntheticAlert(prediction_id=prediction.id,status='PENDING',created_by=user.id);db.add(alert);db.commit();db.refresh(alert)
-    return alert_json(db,alert)
+    alert=create_pending(db,prediction,user.id,test_alert=data.test_alert)
+    db.commit();db.refresh(alert)
+    return alert_json(db,alert,admin=True)
 
 
 @router.get('/alerts')
-def approved_alerts(db:Session=Depends(get_db)):
-    return [alert_json(db,a) for a in db.scalars(select(SyntheticAlert).where(SyntheticAlert.status=='APPROVED').order_by(SyntheticAlert.id.desc()).limit(100))]
+def approved_alerts(offset:int=Query(default=0,ge=0),limit:int=Query(default=100,ge=1,le=200),db:Session=Depends(get_db)):
+    return [alert_json(db,a) for a in db.scalars(select(SyntheticAlert).where(SyntheticAlert.status=='APPROVED').order_by(SyntheticAlert.id.desc()).offset(offset).limit(limit))]
 
 
 @router.get('/admin/alerts')
-def admin_alerts(db:Session=Depends(get_db),user:User=Depends(require_met_admin)):
-    return [alert_json(db,a) for a in db.scalars(select(SyntheticAlert).order_by(SyntheticAlert.id.desc()).limit(100))]
+def admin_alerts(offset:int=Query(default=0,ge=0),limit:int=Query(default=100,ge=1,le=200),db:Session=Depends(get_db),user:User=Depends(require_met_admin)):
+    return [alert_json(db,a,admin=True) for a in db.scalars(select(SyntheticAlert).order_by(SyntheticAlert.id.desc()).offset(offset).limit(limit))]
 
 
 @router.post('/admin/alerts/{alert_id}/approve')
@@ -113,7 +126,37 @@ def approve_alert(alert_id:int,db:Session=Depends(get_db),user:User=Depends(requ
     if not get_settings().synthetic_demo_enabled:raise HTTPException(403,'Synthetic alert demonstration is disabled')
     alert=db.scalar(select(SyntheticAlert).where(SyntheticAlert.id==alert_id).with_for_update())
     if alert is None:raise HTTPException(404,'Synthetic alert not found')
-    if alert.status=='REJECTED':raise HTTPException(409,'A rejected synthetic alert cannot be approved')
+    if alert.status not in ['PENDING','APPROVED']:raise HTTPException(409,'A closed synthetic alert cannot be approved')
     if alert.status=='PENDING':
         alert.status='APPROVED';alert.reviewed_by=user.id;alert.reviewed_at=datetime.now(timezone.utc);db.commit();db.refresh(alert)
-    return alert_json(db,alert)
+    return alert_json(db,alert,admin=True)
+
+
+@router.post('/admin/alerts/{alert_id}/acknowledge')
+def acknowledge_alert(alert_id:int,db:Session=Depends(get_db),user:User=Depends(require_met_admin)):
+    alert=db.scalar(select(SyntheticAlert).where(SyntheticAlert.id==alert_id).with_for_update())
+    if alert is None:raise HTTPException(404,'Synthetic alert not found')
+    if alert.status!='APPROVED':raise HTTPException(409,'Only approved synthetic alerts can be acknowledged')
+    if alert.acknowledged_at is None:
+        alert.acknowledged_by=user.id;alert.acknowledged_at=datetime.now(timezone.utc);db.commit()
+    return alert_json(db,alert,admin=True)
+
+
+def close_synthetic(db,alert_id,user,data,target):
+    alert=db.scalar(select(SyntheticAlert).where(SyntheticAlert.id==alert_id).with_for_update())
+    if alert is None:raise HTTPException(404,'Synthetic alert not found')
+    allowed=['APPROVED'] if target=='RESOLVED' else ['PENDING','APPROVED']
+    if alert.status not in allowed:raise HTTPException(409,f'Cannot {target.lower()} a {alert.status} synthetic alert')
+    alert.status=target;alert.closed_by=user.id;alert.closed_at=datetime.now(timezone.utc);alert.closure_reason=data.reason
+    db.commit()
+    return alert_json(db,alert,admin=True)
+
+
+@router.post('/admin/alerts/{alert_id}/resolve')
+def resolve_alert(alert_id:int,data:AlertClosureRequest,db:Session=Depends(get_db),user:User=Depends(require_met_admin)):
+    return close_synthetic(db,alert_id,user,data,'RESOLVED')
+
+
+@router.post('/admin/alerts/{alert_id}/cancel')
+def cancel_alert(alert_id:int,data:AlertClosureRequest,db:Session=Depends(get_db),user:User=Depends(require_met_admin)):
+    return close_synthetic(db,alert_id,user,data,'CANCELLED')

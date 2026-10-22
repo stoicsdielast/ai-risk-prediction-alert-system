@@ -781,8 +781,11 @@ The isolated synthetic replay and alert-approval demonstration is documented in
 - Reads: `GET /api/synthetic/info`, `GET /api/synthetic/frame?timestamp=`
   (timezone-aware exact hourly timestamps), `GET /api/synthetic/alerts`.
 - Demo writes (require `SYNTHETIC_DEMO_ENABLED=true` and a MET_ADMIN token):
-  `POST /api/synthetic/admin/alerts` (only for HIGH/VERY_HIGH provisional
-  forecasts) and `POST /api/synthetic/admin/alerts/{id}/approve`.
+  `POST /api/synthetic/admin/alerts` (HIGH/VERY_HIGH forecasts, or an explicit
+  `test_alert=true` for isolated LOW/MODERATE tests) and
+  `POST /api/synthetic/admin/alerts/{id}/approve`. Administrator acknowledgement,
+  resolution, cancellation and the required additive migration are documented
+  in [Alert management](../docs/ALERT_MANAGEMENT.md).
 - Every response carries `source_type: "synthetic"` and a research-demonstration
   notice. These are simulator outputs, never official Fiji MET readings or
   emergency warnings.

@@ -8,7 +8,7 @@ from app.models.synthetic import SyntheticAlert, SyntheticPrediction
 from app.models.user import User, UserRole, AccountStatus
 
 
-def create_pending(db, prediction, actor_id):
+def create_pending(db, prediction, actor_id, *, test_alert=False):
     if not get_settings().synthetic_demo_enabled:
         return None
     actor = db.get(User, actor_id) if actor_id is not None else None
@@ -17,7 +17,7 @@ def create_pending(db, prediction, actor_id):
     stored = db.scalar(select(SyntheticPrediction).where(SyntheticPrediction.id == prediction.id).with_for_update())
     if stored is None:
         raise ValueError("Save and flush the synthetic prediction first")
-    if stored.risk_category not in ("HIGH", "VERY_HIGH"):
+    if stored.risk_category not in ("HIGH", "VERY_HIGH") and not test_alert:
         return None
     def existing():
         return db.scalar(select(SyntheticAlert).where(SyntheticAlert.prediction_id == stored.id))
@@ -26,7 +26,7 @@ def create_pending(db, prediction, actor_id):
         return alert
     try:
         with db.begin_nested():
-            alert = SyntheticAlert(prediction_id=stored.id, status="PENDING", created_by=actor.id)
+            alert = SyntheticAlert(prediction_id=stored.id, status="PENDING", created_by=actor.id, is_test=test_alert)
             db.add(alert)
             db.flush()
     except IntegrityError:

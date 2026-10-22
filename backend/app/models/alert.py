@@ -20,6 +20,8 @@ class AlertStatus(str, Enum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
     SUPPRESSED = "SUPPRESSED"
+    RESOLVED = "RESOLVED"
+    CANCELLED = "CANCELLED"
 
 
 class AlertSource(str, Enum):
@@ -59,6 +61,15 @@ class Alert(Base):
             name="ck_suppressed_alert_audit",
         ),
         Index("ix_alert_status_created", "status", "created_at"),
+        CheckConstraint(
+            "status NOT IN ('RESOLVED','CANCELLED') OR (closed_by_user_id IS NOT NULL "
+            "AND closed_at IS NOT NULL AND closure_reason IS NOT NULL AND length(trim(closure_reason)) > 0)",
+            name="ck_alert_closure_audit",
+        ),
+        CheckConstraint(
+            "(acknowledged_by_user_id IS NULL) = (acknowledged_at IS NULL)",
+            name="ck_alert_acknowledgement_audit",
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -90,6 +101,11 @@ class Alert(Base):
     suppression_reason: Mapped[str | None] = mapped_column(String(1000))
     suppressed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
     suppressed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    acknowledged_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closure_reason: Mapped[str | None] = mapped_column(String(1000))
 
     location: Mapped[Location] = relationship(foreign_keys=[location_id], lazy="selectin")
     prediction: Mapped[Prediction | None] = relationship(

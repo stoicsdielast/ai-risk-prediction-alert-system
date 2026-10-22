@@ -3,6 +3,7 @@ import { AlertFeedStatus } from '../components/alerts/AlertFeedStatus'
 import { PageHeader } from '../components/layout/PageHeader'
 import { RiskPill } from '../components/pills/DataPill'
 import { formatDateTime } from '../utils/date'
+import { AlertProvenance } from '../components/alerts/AlertProvenance'
 
 export function CommunityAlertsPage() {
   const feed = usePublicAlerts()
@@ -10,8 +11,8 @@ export function CommunityAlertsPage() {
     <div className="page-stack">
       <PageHeader
         eyebrow="Community information"
-        title="Community alerts"
-        description="Administrator-approved alerts from the university prototype. AI predictions support review; they are not official Fiji MET warnings."
+        title="Alerts & notifications"
+        description="Administrator-approved community alerts. Simulated alerts are labelled. Official Fiji MET warnings are issued separately and take precedence."
       />
       <AlertFeedStatus {...feed} />
       {feed.data?.length === 0 && (
@@ -27,7 +28,7 @@ export function CommunityAlertsPage() {
               <h2>{alert.location.name}</h2>
               <RiskPill risk={alert.severity} />
             </header>
-            {alert.is_demo && <p className="alert-demo-label">DEMO ONLY — simulated prediction, not a real flood warning.</p>}
+            <AlertProvenance alert={alert} />
             <p className="community-alert-message">{alert.message}</p>
             <dl className="alert-detail-grid">
               <div>

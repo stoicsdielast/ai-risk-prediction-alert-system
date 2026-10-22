@@ -12,6 +12,7 @@ export interface PublicAlert {
   message: string
   created_at: string
   approved_at: string | null
+  expires_at?: string | null
   prediction?: {
     id: number
     risk_level: RiskLevel
@@ -29,6 +30,11 @@ export interface AdminAlert extends PublicAlert {
   rejected_at: string | null
   suppressed_at: string | null
   suppression_reason: string | null
+  acknowledged_by_user_id?: number | null
+  acknowledged_at?: string | null
+  closed_by_user_id?: number | null
+  closed_at?: string | null
+  closure_reason?: string | null
 }
 
 export interface AlertDraft {
@@ -37,4 +43,4 @@ export interface AlertDraft {
   message: string
 }
 
-export type AlertAction = 'approve' | 'reject' | 'suppress'
+export type AlertAction = 'approve' | 'reject' | 'suppress' | 'acknowledge' | 'resolve' | 'cancel'

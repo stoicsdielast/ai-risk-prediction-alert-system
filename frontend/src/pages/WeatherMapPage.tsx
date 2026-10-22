@@ -133,8 +133,8 @@ export function WeatherMapPage() {
     <div className="weather-map-page page-stack">
       <PageHeader
         eyebrow="National monitoring view"
-        title="Weather & flood-risk map"
-        description="Explore monitored Fiji locations with backend flood-risk predictions and stored weather observations."
+        title="Weather monitoring & flood mapping"
+        description="Explore monitored Fiji locations, flood risk predictions and stored weather records."
       />
 
       <SyntheticReplayPanel />

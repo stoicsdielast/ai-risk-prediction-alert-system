@@ -124,7 +124,7 @@ export function WelcomePage() {
                 <span>Operational workflow</span>
                 <strong>From observation to alert</strong>
               </div>
-              <span className="landing-preview__badge">Prototype</span>
+              <span className="landing-preview__badge">Decision support</span>
             </header>
 
             <ol className="landing-preview__steps">
@@ -219,7 +219,7 @@ export function WelcomePage() {
               <small>Flood-risk decision support for Fiji</small>
             </span>
           </div>
-          <p>University prototype · Weather and alert information is for demonstration.</p>
+          <p>Weather sources and simulated records are labelled. Follow official Fiji MET warnings.</p>
         </div>
       </footer>
     </main>

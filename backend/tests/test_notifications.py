@@ -126,14 +126,15 @@ def test_failed_delivery_retries_without_new_record_and_preserves_attempts(clien
     assert attempts[0]["error"] == "Simulated browser failure"
 
 
-@pytest.mark.parametrize("change", ["suppress", "expire", "unsubscribe", "disable", "inactive"])
+@pytest.mark.parametrize("change", ["suppress", "resolve", "cancel", "expire", "unsubscribe", "disable", "inactive"])
 def test_delivery_rechecks_eligibility(client, setup, session_factory, change):
     admin, user, _, locations = setup
     opt_in(client, user, locations[0])
     alert_id = approve(client, admin, locations[0])
     id = history(client, user)[0]["id"]
-    if change == "suppress":
-        client.patch(f"/api/admin/alerts/{alert_id}/suppress", headers=auth(admin), json={"reason": "SIMULATED withdrawal"})
+    if change in ("suppress", "resolve", "cancel"):
+        response = client.patch(f"/api/admin/alerts/{alert_id}/{change}", headers=auth(admin), json={"reason": "SIMULATED withdrawal"})
+        assert response.status_code == 200
     elif change == "unsubscribe":
         client.delete(f"/api/me/subscriptions/{locations[0].id}", headers=auth(user))
     elif change == "disable":

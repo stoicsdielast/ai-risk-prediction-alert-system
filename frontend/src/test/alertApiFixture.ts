@@ -73,7 +73,7 @@ export function installAlertApi(initial: AdminAlert[] = [sampleAlert()]) {
       const offset = Number(url.searchParams.get('offset'))
       return json(
         state.alerts
-          .filter((alert) => alert.status === 'APPROVED' && alert.location.is_active)
+          .filter((alert) => alert.status === 'APPROVED' && alert.location.is_active && (!alert.expires_at || Date.parse(alert.expires_at) > Date.now()))
           .slice(offset, offset + 200),
       )
     }
@@ -95,7 +95,7 @@ export function installAlertApi(initial: AdminAlert[] = [sampleAlert()]) {
       return json(alert, 201)
     }
     const match = url.pathname.match(
-      /^\/api\/admin\/alerts\/(\d+)(?:\/(approve|reject|suppress))?$/,
+      /^\/api\/admin\/alerts\/(\d+)(?:\/(approve|reject|suppress|acknowledge|resolve|cancel))?$/,
     )
     if (match && method === 'PATCH') {
       const alert = state.alerts.find((item) => item.id === Number(match[1]))
@@ -111,6 +111,8 @@ export function installAlertApi(initial: AdminAlert[] = [sampleAlert()]) {
           suppression_reason: body.reason,
           suppressed_at: '2026-10-14T01:00:00Z',
         })
+      if (match[2] === 'acknowledge') Object.assign(alert, { acknowledged_at: new Date().toISOString(), acknowledged_by_user_id: state.user.id })
+      if (match[2] === 'resolve' || match[2] === 'cancel') Object.assign(alert, { status: match[2] === 'resolve' ? 'RESOLVED' : 'CANCELLED', closed_at: new Date().toISOString(), closed_by_user_id: state.user.id, closure_reason: body.reason })
       if (!match[2]) alert.updated_at = '2026-10-14T01:00:00Z'
       return json(alert)
     }

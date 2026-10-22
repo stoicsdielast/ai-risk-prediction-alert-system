@@ -109,7 +109,7 @@ describe('LocationDetailCard', () => {
     render(<LocationDetailCard location={nadi} />)
 
     const details = screen.getByRole('complementary')
-    expect(await within(details).findByText('Synthetic demo data')).toBeInTheDocument()
+    expect(await within(details).findByText('Synthetic data')).toBeInTheDocument()
     expect(within(details).getByText('26.4°C')).toBeInTheDocument()
     expect(within(details).getByText('12.5 mm')).toBeInTheDocument()
     expect(within(details).getByText('Per 60-minute interval')).toBeInTheDocument()

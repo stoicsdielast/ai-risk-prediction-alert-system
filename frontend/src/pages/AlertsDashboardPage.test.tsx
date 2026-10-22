@@ -37,7 +37,7 @@ describe('persisted alert management', () => {
     await screen.findByRole('button', { name: /Rejected 1/ })
     expect(details().getByText('TEST ONLY: Move to higher ground.')).toBeInTheDocument()
     const reads = fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/admin/alerts'))
-    expect(reads).toHaveLength(4)
+    expect(reads).toHaveLength(6)
     expect(
       reads.every(
         ([, options]) => new Headers(options?.headers).get('Authorization') === 'Bearer test-token',
@@ -107,10 +107,10 @@ describe('persisted alert management', () => {
     await screen.findByRole('button', { name: /Approved 1/ })
     const button = details().getByRole('button', { name: 'Suppress' })
     expect(button).toBeDisabled()
-    await user.type(details().getByRole('textbox', { name: 'Suppression reason' }), '   ')
+    await user.type(details().getByRole('textbox', { name: 'Action reason' }), '   ')
     expect(button).toBeDisabled()
     await user.type(
-      details().getByRole('textbox', { name: 'Suppression reason' }),
+      details().getByRole('textbox', { name: 'Action reason' }),
       'Test-only warning withdrawn.  ',
     )
     await user.click(button)
@@ -207,6 +207,48 @@ describe('persisted alert management', () => {
     // The shared public feed may start before the route guard redirects.
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/admin/'))).toBe(false)
     expect(fetchMock.mock.calls.every(([, options]) => !new Headers(options?.headers).has('Authorization'))).toBe(true)
+  })
+
+  it.each(['Resolve', 'Cancel alert'])('confirms %s and keeps the closed record in history', async (action) => {
+    const user = userEvent.setup()
+    installAlertApi([sampleAlert({ status: 'APPROVED', approved_at: '2026-10-14T01:00:00Z' })])
+    renderApp()
+    await screen.findByRole('button', { name: /Approved 1/ })
+    await user.click(screen.getByRole('button', { name: 'Active alerts' }))
+    expect(details().getByRole('button', { name: action })).toBeDisabled()
+    await user.type(details().getByRole('textbox', { name: 'Action reason' }), 'Test exercise ended')
+    vi.mocked(window.confirm).mockReturnValue(false)
+    await user.click(details().getByRole('button', { name: action }))
+    expect(details().getByText('TEST ONLY: Move to higher ground.')).toBeInTheDocument()
+    vi.mocked(window.confirm).mockReturnValue(true)
+    await user.click(details().getByRole('button', { name: action }))
+    await screen.findByText(`Alert #41 ${action === 'Resolve' ? 'resolved' : 'cancelled'}.`)
+    expect(screen.queryByRole('button', { name: action })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Alert history' }))
+    expect(details().getByText(/Test exercise ended/)).toBeInTheDocument()
+    expect(details().getByText(/Administrator #7/)).toBeInTheDocument()
+  })
+
+  it('shows expired alerts in history and allows acknowledgement only for current approved alerts', async () => {
+    const user = userEvent.setup()
+    installAlertApi([sampleAlert({ status: 'APPROVED', expires_at: '2020-01-01T00:00:00Z' })])
+    renderApp()
+    await screen.findByRole('button', { name: /Approved 1/ })
+    expect(details().queryByRole('button', { name: 'Acknowledge' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Active alerts' }))
+    expect(details().getByText('Select an alert')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Alert history' }))
+    expect(details().getByText('Expired', { exact: true })).toBeInTheDocument()
+  })
+
+  it('acknowledges an active alert without closing it', async () => {
+    const user = userEvent.setup()
+    installAlertApi([sampleAlert({ status: 'APPROVED' })])
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Acknowledge' }))
+    await screen.findByText('Alert #41 acknowledged.')
+    expect(details().getByRole('button', { name: 'Acknowledged' })).toBeDisabled()
+    expect(details().getByText('Approved', { exact: true, selector: '.data-pill' })).toBeInTheDocument()
   })
 
   it('uses API counts on the admin dashboard, including only public active alerts', async () => {
