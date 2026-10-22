@@ -6,7 +6,7 @@ export function BrowserAlertControl() {
   return (
     <section className="prototype-panel browser-alert-control" aria-label="Browser notifications">
       <div>
-        <strong>Notifications</strong>
+        <strong>Alerts & notifications</strong>
         <p role="status">
           {alerts.permission === 'granted' && (alerts.enabled ? '✓ Browser notifications opted in for saved locations' : 'Browser permission granted; account notifications disabled')}
           {alerts.permission === 'default' && 'Enable desktop notifications for newly approved high-risk alerts.'}
@@ -14,9 +14,12 @@ export function BrowserAlertControl() {
           {alerts.permission === 'unsupported' && 'This browser does not support desktop notifications. Website alerts remain available.'}
           {alerts.permission === 'insecure' && 'Browser alerts require HTTPS or localhost. Website alerts remain available.'}
         </p>
-        <small>University prototype · Keep this site open. Notifications may be delayed in background tabs.</small>
-        <p><Link to="/dashboard#saved-locations">Manage saved locations and notification history</Link></p>
-        {!alerts.deliveryEnabled && <p>Browser delivery is disabled by the operator. Your preferences and notification history are saved.</p>}
+        <details className="source-details">
+          <summary>Notification settings & delivery status</summary>
+          <p>Keep this site open. Notifications may be delayed in background tabs.</p>
+          <p><Link to="/dashboard#saved-locations">Manage saved locations and notification history</Link></p>
+          {!alerts.deliveryEnabled && <p>Browser delivery is disabled by the operator. Your preferences and notification history are saved.</p>}
+        </details>
         {alerts.error && <p role="alert">{alerts.error}</p>}
       </div>
       <div className="browser-alert-control__actions">

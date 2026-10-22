@@ -87,7 +87,7 @@ beforeEach(() => {
 describe('SyntheticResearchPage', () => {
   it('shows the research badge, keeps unpublished scenarios disabled and renders evaluation labels', async () => {
     renderPage()
-    expect(await screen.findByRole('heading', { name: /Research Demonstration/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Scenario analysis' })).toBeInTheDocument()
     const select = await screen.findByLabelText('Synthetic scenario')
     await waitFor(() => expect(mockedStorms).toHaveBeenCalledWith('realistic'))
     const options = select.querySelectorAll('option')

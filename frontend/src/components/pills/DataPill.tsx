@@ -31,7 +31,7 @@ const labels: Record<PillValue, string> = {
   NO_PREDICTION: 'No prediction',
   SAMPLE_RISK: 'Sample risk',
   STALE: 'Stale',
-  SYNTHETIC_DATA: 'Synthetic demo data',
+  SYNTHETIC_DATA: 'Synthetic data',
   SYNTHETIC_PREDICTION: 'Synthetic research',
 }
 

@@ -1,3 +1,4 @@
+import { isSimulatedAlert } from '../../alerts/provenance'
 import { useLocationWeather } from '../../locations/useLocationWeather'
 import type { PublicAlert } from '../../types/alert'
 import type { MapLocation, MapPrediction } from '../../types/location'
@@ -41,36 +42,38 @@ function WeatherMetric({ label, value, hint }: WeatherMetricProps) {
   )
 }
 
+const weatherNumber = new Intl.NumberFormat('en-FJ', { maximumFractionDigits: 1 })
+
 function observationMetrics(
   observation: ApiWeatherObservation,
 ): WeatherMetricProps[] {
   const metrics: WeatherMetricProps[] = []
 
   if (observation.temperature_c !== null) {
-    metrics.push({ label: 'Temperature', value: `${observation.temperature_c}°C` })
+    metrics.push({ label: 'Temperature', value: `${weatherNumber.format(observation.temperature_c)}°C` })
   }
   if (observation.rainfall_mm !== null) {
     metrics.push({
       label: 'Rainfall',
-      value: `${observation.rainfall_mm} mm`,
+      value: `${weatherNumber.format(observation.rainfall_mm)} mm`,
       hint: observation.rainfall_period_minutes
         ? `Per ${observation.rainfall_period_minutes}-minute interval`
         : undefined,
     })
   }
   if (observation.humidity_pct !== null) {
-    metrics.push({ label: 'Humidity', value: `${observation.humidity_pct}%` })
+    metrics.push({ label: 'Humidity', value: `${weatherNumber.format(observation.humidity_pct)}%` })
   }
   if (observation.wind_speed_mps !== null) {
-    metrics.push({ label: 'Wind', value: `${observation.wind_speed_mps} m/s` })
+    metrics.push({ label: 'Wind', value: `${weatherNumber.format(observation.wind_speed_mps)} m/s` })
   }
   if (observation.pressure_hpa !== null) {
-    metrics.push({ label: 'Pressure', value: `${observation.pressure_hpa} hPa` })
+    metrics.push({ label: 'Pressure', value: `${weatherNumber.format(observation.pressure_hpa)} hPa` })
   }
   if (observation.river_level_m !== null) {
     metrics.push({
       label: 'River level',
-      value: `${observation.river_level_m} m`,
+      value: `${weatherNumber.format(observation.river_level_m)} m`,
       hint: observation.gauge_datum ?? undefined,
     })
   }
@@ -186,7 +189,7 @@ function WeatherSection({
             </>
           )}
         </span>
-        <h3 id="current-weather-title">Current weather</h3>
+        <h3 id="current-weather-title">Stored weather</h3>
       </div>
 
       {status === 'idle' || status === 'loading' ? (
@@ -203,14 +206,14 @@ function WeatherSection({
       ) : !observation ? (
         <div className="prototype-empty-state">
           <p>
-            No observation has been stored for this location yet. Stored demo
+            No observation has been stored for this location yet. Generated historical
             weather appears here once it has been ingested.
           </p>
         </div>
       ) : (
         <>
           <p className="location-detail-card__timestamp">
-            Observed{' '}
+            {observation.source_type === 'synthetic' ? 'Simulated timestamp' : 'Observed'}{' '}
             <time
               dateTime={observation.observed_at}
               title={formatDateTime(observation.observed_at)}
@@ -270,7 +273,7 @@ function PublicAlertsPanel({ alerts }: { alerts: PublicAlert[] }) {
             <div className="activity-item__content">
               <div className="activity-item__heading">
                 <RiskPill risk={alert.severity} compact />
-                <small>{alertSourceLabel(alert.source)}</small>
+                <small>{isSimulatedAlert(alert) ? 'Simulated alert · Not an emergency warning' : alertSourceLabel(alert.source)}</small>
               </div>
               <p>{alert.message}</p>
               <small>{formatRelativeTime(alert.created_at)}</small>

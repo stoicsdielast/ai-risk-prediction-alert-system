@@ -62,12 +62,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
           <NavLink to="/simulation" onClick={onClose}>
             <SidebarIcon name="map" />
-            <span>Synthetic replay</span>
+            <span>Historical analysis</span>
           </NavLink>
 
           <NavLink to="/research" onClick={onClose}>
             <SidebarIcon name="map" />
-            <span>Scenario research</span>
+            <span>Scenario analysis</span>
           </NavLink>
 
           {isAdmin && (

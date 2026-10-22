@@ -88,12 +88,14 @@ export function SyntheticResearchPage() {
     [series, locationId],
   )
 
-  return <div className="page-stack synthetic-replay">
+  return <div className="page-stack synthetic-replay" data-source-type="synthetic">
     <section className="synthetic-banner" role="note">
-      <h1>{SYNTHETIC_NOTICE}</h1>
-      <p>Lecturer-facing research replay of the controlled / realistic / stress scenarios. Historical simulator
-        outcomes only — not forecasts, not Fiji MET readings, not emergency warnings. The deployed V1 model and its
-        configuration are unchanged; nothing here can create alerts.</p>
+      <span className="source-indicator">Synthetic data · Research only</span>
+      <h1>Scenario analysis</h1>
+      <p>Compare controlled, realistic and stress scenarios using generated historical weather. Results are not Fiji MET observations or emergency warnings.</p>
+      <details className="source-details"><summary>Data source & methodology</summary>
+        <p>{SYNTHETIC_NOTICE}. Simulator outcomes do not establish real forecast skill. The deployed V1 model and its configuration are unchanged; this view cannot create alerts.</p>
+      </details>
     </section>
     {error && <p role="alert">{error}</p>}
     <section className="prototype-panel synthetic-controls" aria-label="Scenario selector">

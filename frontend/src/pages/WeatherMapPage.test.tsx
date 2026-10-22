@@ -193,7 +193,7 @@ describe('WeatherMapPage', () => {
     await screen.findByText('3 locations shown')
 
     const details = screen.getByRole('complementary')
-    expect(await within(details).findByText('No observation has been stored for this location yet. Stored demo weather appears here once it has been ingested.')).toBeInTheDocument()
+    expect(await within(details).findByText('No observation has been stored for this location yet. Generated historical weather appears here once it has been ingested.')).toBeInTheDocument()
     expect(mockedGetLatestWeather).toHaveBeenCalledWith(1, 'synthetic', expect.any(AbortSignal))
   })
 

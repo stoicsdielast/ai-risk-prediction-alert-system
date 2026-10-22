@@ -36,7 +36,7 @@ export function SavedLocationsPanel() {
     finally { setBusy(false) }
   }
   const available = [...locations, ...saved.filter(row => !locations.some(loc => loc.id === row.id))]
-  return <section id="saved-locations" className="prototype-panel" aria-label="Saved locations and notification history">
+  return <section id="saved-locations" className="prototype-panel saved-locations-panel" aria-label="Saved locations and notification history">
     <h2>My saved locations</h2>
     <p>Follow multiple monitored Fiji locations. Use the notification controls above to opt in or out.</p>
     {error && <p role="alert">{error}</p>}
@@ -59,7 +59,9 @@ export function SavedLocationsPanel() {
       {row.delivered_at && <span> · Delivered {new Date(row.delivered_at).toLocaleString()}</span>}
       {row.last_error && <span> · Last error: {row.last_error}</span>}
     </li>)}</ul>
-    <button disabled={busy || offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>Previous notifications</button>
-    <button disabled={busy || history.length < 50} onClick={() => setOffset(offset + 50)}>Older notifications</button>
+    <div className="saved-locations-panel__pagination">
+      <button className="button button--secondary" disabled={busy || offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>Previous notifications</button>
+      <button className="button button--secondary" disabled={busy || history.length < 50} onClick={() => setOffset(offset + 50)}>Older notifications</button>
+    </div>
   </section>
 }

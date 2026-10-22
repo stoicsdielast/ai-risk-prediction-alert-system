@@ -46,8 +46,8 @@ export function AdminModelPerformancePage() {
 
           <section className="prototype-panel" aria-label="Selected research model">
             <div className="prototype-panel__header"><div>
-              <h2>Currently selected research model</h2>
-              <p>The model served by the synthetic research demonstration. V2 and V3 are research candidates and are not promoted.</p>
+              <h2>Deployed model</h2>
+              <p>V1 serves the synthetic analysis workflow. V2 and V3 remain research candidates and are not deployed.</p>
             </div></div>
             {deployed ? (
               <div className="stat-grid stat-grid--padded">
