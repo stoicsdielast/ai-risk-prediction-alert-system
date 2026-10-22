@@ -15,6 +15,7 @@ from app.models.user import AccountStatus, User, UserRole
 @pytest.fixture(autouse=True)
 def isolated_settings(monkeypatch):
     monkeypatch.setenv("ALERT_DEMO_ENABLED", "false")
+    monkeypatch.setenv("SYNTHETIC_DEMO_ENABLED", "false")
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql+psycopg://test:test@localhost/test",

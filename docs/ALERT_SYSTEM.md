@@ -1,5 +1,9 @@
 # Alert System backend
 
+The current creation rules, acknowledgement, resolution, cancellation, audit
+fields and migration procedure are documented in [Alert management](ALERT_MANAGEMENT.md).
+The milestone narrative below predates those lifecycle additions.
+
 This milestone persists flood alerts and provides administrator review and public
 read APIs. It reuses the existing SQLAlchemy session, JWT authentication, account
 approval checks, and `MET_ADMIN` role. It does not run the ML model, fetch weather,

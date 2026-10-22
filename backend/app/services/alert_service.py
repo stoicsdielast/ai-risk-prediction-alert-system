@@ -16,7 +16,7 @@ from app.models.location import Location
 from app.models.prediction import ALERT_DEMO_MODEL_PREFIX, Prediction
 from app.models.risk import RiskLevel
 from app.models.user import User
-from app.schemas.alert import AlertSuppressionRequest, AlertUpdate, ManualAlertCreate
+from app.schemas.alert import AlertClosureRequest, AlertSuppressionRequest, AlertUpdate, ManualAlertCreate
 from app.services import notification_service
 
 logger = logging.getLogger(__name__)
@@ -30,12 +30,15 @@ SEVERITY_RANK = {
 }
 COOLDOWN_STATUSES = frozenset({
     AlertStatus.PENDING, AlertStatus.APPROVED, AlertStatus.SUPPRESSED,
+    AlertStatus.RESOLVED, AlertStatus.CANCELLED,
 })
 ALLOWED_TRANSITIONS = {
-    AlertStatus.PENDING: frozenset({AlertStatus.APPROVED, AlertStatus.REJECTED, AlertStatus.SUPPRESSED}),
-    AlertStatus.APPROVED: frozenset({AlertStatus.SUPPRESSED}),
+    AlertStatus.PENDING: frozenset({AlertStatus.APPROVED, AlertStatus.REJECTED, AlertStatus.SUPPRESSED, AlertStatus.CANCELLED}),
+    AlertStatus.APPROVED: frozenset({AlertStatus.SUPPRESSED, AlertStatus.RESOLVED, AlertStatus.CANCELLED}),
     AlertStatus.REJECTED: frozenset(),
     AlertStatus.SUPPRESSED: frozenset(),
+    AlertStatus.RESOLVED: frozenset(),
+    AlertStatus.CANCELLED: frozenset(),
 }
 
 
@@ -330,6 +333,37 @@ def suppress_alert(
     alert.suppression_reason = data.reason
     alert.suppressed_by_user_id = admin.id
     alert.suppressed_at = datetime.now(timezone.utc)
+    db.commit()
+    return alert
+
+
+@_database_operation
+def acknowledge_alert(db: Session, alert_id: int, admin: User) -> Alert:
+    alert = _get_alert(db, alert_id, lock=True)
+    if alert.status != AlertStatus.APPROVED:
+        raise InvalidAlertStateError("Only approved alerts can be acknowledged")
+    if alert.expires_at is not None:
+        expiry = alert.expires_at.replace(tzinfo=timezone.utc) if alert.expires_at.tzinfo is None else alert.expires_at
+        if expiry <= datetime.now(timezone.utc):
+            raise InvalidAlertStateError("Expired alerts cannot be acknowledged")
+    if alert.acknowledged_at is None:
+        alert.acknowledged_at = datetime.now(timezone.utc)
+        alert.acknowledged_by_user_id = admin.id
+        db.commit()
+    return alert
+
+
+@_database_operation
+def close_alert(db: Session, alert_id: int, data: AlertClosureRequest, admin: User, *, target: AlertStatus) -> Alert:
+    if target not in (AlertStatus.RESOLVED, AlertStatus.CANCELLED):
+        raise InvalidAlertDataError("Invalid alert closure")
+    alert = _get_alert(db, alert_id, lock=True)
+    ensure_transition(alert, target)
+    alert.status = target
+    alert.closed_by_user_id = admin.id
+    alert.closed_at = datetime.now(timezone.utc)
+    alert.closure_reason = data.reason
+    # Retain previous approval and expiry: closing must not reset the event cooldown.
     db.commit()
     return alert
 

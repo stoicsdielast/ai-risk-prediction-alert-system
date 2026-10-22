@@ -38,7 +38,11 @@ class SyntheticPrediction(Base):
 
 class SyntheticAlert(Base):
     __tablename__ = "synthetic_alerts"
-    __table_args__ = (CheckConstraint("status IN ('PENDING','APPROVED','REJECTED')", name="ck_synthetic_alert_status"),)
+    __table_args__ = (
+        CheckConstraint("status IN ('PENDING','APPROVED','REJECTED','RESOLVED','CANCELLED')", name="ck_synthetic_alert_status"),
+        CheckConstraint("status NOT IN ('RESOLVED','CANCELLED') OR (closed_by IS NOT NULL AND closed_at IS NOT NULL "
+                        "AND closure_reason IS NOT NULL AND length(trim(closure_reason)) > 0)", name="ck_synthetic_closure_audit"),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     prediction_id: Mapped[int] = mapped_column(ForeignKey("synthetic_predictions.id"), unique=True, nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="PENDING", nullable=False)
@@ -46,3 +50,9 @@ class SyntheticAlert(Base):
     reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_test: Mapped[bool] = mapped_column(default=False, server_default="false", nullable=False)
+    acknowledged_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closure_reason: Mapped[str | None] = mapped_column(String(1000))
