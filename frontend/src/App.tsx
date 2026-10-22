@@ -18,8 +18,9 @@ import { RegisterPage } from './pages/RegisterPage'
 import { RegistrationSubmittedPage } from './pages/RegistrationSubmittedPage'
 import { WeatherMapPage } from './pages/WeatherMapPage'
 import { WelcomePage } from './pages/WelcomePage'
-import { SyntheticReplay } from './components/research/SyntheticReplayPanel'
 import { SyntheticResearchPage } from './pages/SyntheticResearchPage'
+
+const SyntheticReplay = lazy(() => import('./components/research/SyntheticReplay').then(m => ({ default: m.SyntheticReplay })))
 
 // Charts pull in Recharts, so the analytics pages load on demand rather than in the main bundle.
 const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage').then((m) => ({ default: m.AdminAnalyticsPage })))
@@ -45,7 +46,7 @@ function App() {
 
       <Route element={<WorkspaceLayout />}>
         <Route path="weather-map" element={<WeatherMapPage />} />
-        <Route path="simulation" element={<SyntheticReplay />} />
+        <Route path="simulation" element={lazyPage(<SyntheticReplay />)} />
         <Route path="research" element={<SyntheticResearchPage />} />
         <Route path="alerts" element={<CommunityAlertsPage />} />
 

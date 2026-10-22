@@ -1,4 +1,6 @@
+import { isExpiredAlert, isSimulatedAlert } from '../alerts/provenance'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ALERT_STATUSES, createAlert, createDemoAlert, editAlert, reviewAlert } from '../api/alerts'
 import { ApiError } from '../api/client'
 import { useAdminAlerts, useAdminRequest } from '../alerts/useAlertFeed'
@@ -7,7 +9,7 @@ import { Alert } from '../components/Alert'
 import { AlertEditor } from '../components/alerts/AlertEditor'
 import { AlertFeedStatus } from '../components/alerts/AlertFeedStatus'
 import { PageHeader } from '../components/layout/PageHeader'
-import { RiskPill, StatusPill } from '../components/pills/DataPill'
+import { DataPill, RiskPill, StatusPill } from '../components/pills/DataPill'
 import type { AdminAlert, AlertAction, AlertDraft } from '../types/alert'
 import type { AlertStatus } from '../types/prototype'
 import { formatDateTime, formatRelativeTime } from '../utils/date'
@@ -16,6 +18,7 @@ export function AlertsDashboardPage() {
   const { token } = useAuth()
   const feed = useAdminAlerts()
   const request = useAdminRequest()
+  const [view, setView] = useState<'ALL' | 'ACTIVE' | 'HISTORY'>('ALL')
   const [filter, setFilter] = useState<'ALL' | AlertStatus>('ALL')
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -29,6 +32,7 @@ export function AlertsDashboardPage() {
   const filtered = alerts.filter(
     (alert) =>
       (filter === 'ALL' || alert.status === filter) &&
+      (view === 'ALL' || (view === 'ACTIVE' ? alert.status === 'APPROVED' && !isExpiredAlert(alert) : !['PENDING', 'APPROVED'].includes(alert.status) || isExpiredAlert(alert))) &&
       `${alert.id} ${alert.location.name} ${alert.message}`.toLowerCase().includes(query),
   )
   const selected = filtered.find((alert) => alert.id === selectedId) ?? filtered[0] ?? null
@@ -74,20 +78,21 @@ export function AlertsDashboardPage() {
 
   const review = (action: AlertAction) => {
     if (!token || !selected || busy) return
-    if (action === 'suppress' && !reason.trim()) {
-      setError('Enter a reason before suppressing this alert.')
+    if (['suppress', 'resolve', 'cancel'].includes(action) && !reason.trim()) {
+      setError('Enter a reason before closing this alert.')
       return
     }
-    const verb = { approve: 'Approve', reject: 'Reject', suppress: 'Suppress' }[action]
+    const verb = { approve: 'Approve', reject: 'Reject', suppress: 'Suppress', acknowledge: 'Acknowledge', resolve: 'Resolve', cancel: 'Cancel' }[action]
+    const outcome = { approve: 'approved', reject: 'rejected', suppress: 'suppressed', acknowledge: 'acknowledged', resolve: 'resolved', cancel: 'cancelled' }[action]
     if (
       !window.confirm(
-        `${verb} alert #${selected.id} for ${selected.location.name}?${action === 'approve' ? ' It will be visible to the community.' : ''}`,
+        `${verb} alert #${selected.id} for ${selected.location.name}?${action === 'approve' ? ' It will be visible to the community.' : ''}${['suppress', 'resolve', 'cancel'].includes(action) ? ` Reason: ${reason.trim()}. The record will remain in alert history.` : ''}`,
       )
     )
       return
     void mutate(
       () => reviewAlert(token, selected.id, action, reason),
-      `Alert #${selected.id} ${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'suppressed'}.`,
+      `Alert #${selected.id} ${outcome}.`,
     )
   }
 
@@ -111,9 +116,10 @@ export function AlertsDashboardPage() {
           </button>
         }
       />
+      <p className="alert-workflow-note">Historical analysis alerts use a separate workspace. <Link to="/simulation#simulated-alerts">Manage simulated alerts</Link></p>
       {import.meta.env.DEV && (
         <section className="prototype-panel alert-demo-controls" aria-label="Development alert scenarios">
-          <strong>Progress review demo — simulated AI output</strong>
+          <strong>Simulated alert scenarios</strong>
           <p>Creates a stored prediction and a pending alert for review. These examples do not run the trained model.</p>
           <div>
             <button className="button button--secondary" disabled={busy || !token} onClick={() => {
@@ -139,6 +145,10 @@ export function AlertsDashboardPage() {
         />
       )}
 
+      <div className="filter-pills" role="group" aria-label="Alert views">
+        {(['ALL', 'ACTIVE', 'HISTORY'] as const).map(value => <button key={value} type="button" className="filter-pill" aria-pressed={view === value} disabled={busy}
+          onClick={() => { setView(value); setFilter('ALL'); setReason('') }}>{value === 'ALL' ? 'All alerts' : value === 'ACTIVE' ? 'Active alerts' : 'Alert history'}</button>)}
+      </div>
       <section className="alert-toolbar" aria-label="Alert filters">
         <label className="alert-search">
           <input
@@ -180,7 +190,7 @@ export function AlertsDashboardPage() {
       <div className="alert-workspace-grid">
         <section className="prototype-panel alert-list-panel" aria-label="Alerts">
           <header className="prototype-panel__header">
-            <h2>Review queue</h2>
+            <h2>{view === 'ACTIVE' ? 'Active alerts' : view === 'HISTORY' ? 'Alert history' : 'Review queue'}</h2>
           </header>
           {!feed.data ? (
             <div className="prototype-empty-state">
@@ -215,7 +225,7 @@ export function AlertsDashboardPage() {
                   </span>
                   <span className="alert-review-item__message">{alert.message}</span>
                   <span className="alert-review-item__footer">
-                    <StatusPill status={alert.status} />
+                    <StatusPill status={alert.status} />{isExpiredAlert(alert) && <DataPill value="STALE" label="Expired" compact />}
                     <time dateTime={alert.created_at}>{formatRelativeTime(alert.created_at)}</time>
                   </span>
                 </button>
@@ -235,7 +245,7 @@ export function AlertsDashboardPage() {
                   <h2>{selected.location.name}</h2>
                   <small>Alert #{selected.id}</small>
                 </div>
-                <StatusPill status={selected.status} />
+                <div><StatusPill status={selected.status} />{isExpiredAlert(selected) && <DataPill value="STALE" label="Expired" compact />}</div>
               </header>
               <div className="alert-detail-panel__body">
                 <RiskPill risk={selected.severity} />
@@ -247,7 +257,7 @@ export function AlertsDashboardPage() {
                   <div>
                     <dt>Source</dt>
                     <dd>
-                      {selected.is_demo ? 'DEMO ONLY — simulated AI output' : selected.source === 'AI_RECOMMENDATION'
+                      {isSimulatedAlert(selected) ? 'Simulated alert — not an emergency warning' : selected.source === 'AI_RECOMMENDATION'
                         ? 'AI recommendation'
                         : 'MET official'}
                     </dd>
@@ -259,6 +269,9 @@ export function AlertsDashboardPage() {
                       ['Approved', selected.approved_at],
                       ['Rejected', selected.rejected_at],
                       ['Suppressed', selected.suppressed_at],
+                      ['Expires', selected.expires_at],
+                      ['Acknowledged', selected.acknowledged_at],
+                      ['Closed', selected.closed_at],
                     ] as const
                   ).map(
                     ([label, date]) =>
@@ -275,6 +288,8 @@ export function AlertsDashboardPage() {
                 {!selected.location.is_active && (
                   <Alert>This location is inactive. Its alerts cannot be approved.</Alert>
                 )}
+                {selected.acknowledged_by_user_id && <p>Acknowledged by administrator #{selected.acknowledged_by_user_id}</p>}
+                {selected.closure_reason && <p><strong>{selected.status === 'RESOLVED' ? 'Resolution' : 'Cancellation'} reason:</strong> {selected.closure_reason} · Administrator #{selected.closed_by_user_id}</p>}
                 {selected.suppression_reason && (
                   <p>
                     <strong>Suppression reason:</strong> {selected.suppression_reason}
@@ -282,6 +297,10 @@ export function AlertsDashboardPage() {
                 )}
               </div>
               <footer className="alert-detail-actions">
+                {selected.status !== 'PENDING' && <small>Only pending alerts can be edited, approved or rejected. Other records remain available for review and history.</small>}
+                {selected.status === 'APPROVED' && !isExpiredAlert(selected) && <button className="button button--secondary"
+                  disabled={busy || Boolean(editor) || Boolean(selected.acknowledged_at)} onClick={() => review('acknowledge')}>
+                  {selected.acknowledged_at ? 'Acknowledged' : 'Acknowledge'}</button>}
                 <div>
                   <button
                     className="button button--secondary"
@@ -322,7 +341,7 @@ export function AlertsDashboardPage() {
                     }}
                   >
                     <label className="form-field">
-                      <span>Suppression reason</span>
+                      <span>Action reason</span>
                       <textarea
                         required
                         maxLength={1000}
@@ -339,6 +358,11 @@ export function AlertsDashboardPage() {
                     >
                       Suppress
                     </button>
+                    <div className="alert-management-actions">
+                      {selected.status === 'APPROVED' && <button type="button" className="button button--primary" disabled={busy || Boolean(editor) || !reason.trim()} onClick={() => review('resolve')}>Resolve</button>}
+                      <button type="button" className="button button--danger-quiet" disabled={busy || Boolean(editor) || !reason.trim()} onClick={() => review('cancel')}>Cancel alert</button>
+                    </div>
+                    <small>Enter a reason to resolve, cancel or suppress. These actions retain the alert and its audit history.</small>
                   </form>
                 )}
               </footer>

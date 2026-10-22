@@ -26,6 +26,8 @@ const labels: Record<PillValue, string> = {
   APPROVED: 'Approved',
   REJECTED: 'Rejected',
   SUPPRESSED: 'Suppressed',
+  RESOLVED: 'Resolved',
+  CANCELLED: 'Cancelled',
   AI_PREDICTION: 'AI prediction',
   NO_ALERTS: 'No approved alert',
   NO_PREDICTION: 'No prediction',

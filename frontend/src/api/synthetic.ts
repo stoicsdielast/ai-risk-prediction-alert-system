@@ -35,12 +35,24 @@ export interface SyntheticFrame {
 export interface SyntheticAlert {
   id: number
   source_type: 'synthetic'
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'RESOLVED' | 'CANCELLED'
+  location_id: number
+  model_version: string
+  is_test: boolean
   location_name: string
   probability: number
   risk_category: RiskLevel
   timestamp: string
   message: string
+  created_by?: number
+  created_at?: string
+  reviewed_by?: number | null
+  reviewed_at?: string | null
+  acknowledged_by?: number | null
+  acknowledged_at?: string | null
+  closed_by?: number | null
+  closed_at?: string | null
+  closure_reason?: string | null
 }
 export const getSyntheticInfo = () => apiRequest<SyntheticInfo>('/api/synthetic/info')
 export async function getSyntheticFrame(timestamp: string) {
@@ -50,14 +62,24 @@ export async function getSyntheticFrame(timestamp: string) {
   }
   return frame
 }
-export const getSyntheticAlerts = (token?: string) => apiRequest<SyntheticAlert[]>(
-  token ? '/api/synthetic/admin/alerts' : '/api/synthetic/alerts', { token },
-)
-export const createSyntheticAlert = (locationId: number, timestamp: string, token: string) => apiRequest<SyntheticAlert>(
-  '/api/synthetic/admin/alerts', { method: 'POST', token, body: JSON.stringify({ location_id: locationId, timestamp }) },
+export async function getSyntheticAlerts(token?: string) {
+  const rows: SyntheticAlert[] = []
+  for (let offset = 0; ; offset += 200) {
+    const page = await apiRequest<SyntheticAlert[]>(`${token ? '/api/synthetic/admin/alerts' : '/api/synthetic/alerts'}?offset=${offset}&limit=200`, { token })
+    if (!Array.isArray(page) || page.some(row => row.source_type !== 'synthetic')) throw new Error('Unexpected synthetic alert data')
+    rows.push(...page)
+    if (page.length < 200) return rows
+  }
+}
+export const createSyntheticAlert = (locationId: number, timestamp: string, token: string, testAlert = false) => apiRequest<SyntheticAlert>(
+  '/api/synthetic/admin/alerts', { method: 'POST', token, body: JSON.stringify({ location_id: locationId, timestamp, test_alert: testAlert }) },
 )
 export const approveSyntheticAlert = (id: number, token: string) => apiRequest<SyntheticAlert>(
   `/api/synthetic/admin/alerts/${id}/approve`, { method: 'POST', token },
+)
+export const manageSyntheticAlert = (id: number, token: string, action: 'acknowledge' | 'resolve' | 'cancel', reason?: string) => apiRequest<SyntheticAlert>(
+  `/api/synthetic/admin/alerts/${id}/${action}`, { method: 'POST', token,
+    ...(action !== 'acknowledge' ? { body: JSON.stringify({ reason: reason?.trim() }) } : {}) },
 )
 
 export function notifySyntheticApproval(alert: SyntheticAlert, optedIn: boolean): boolean {

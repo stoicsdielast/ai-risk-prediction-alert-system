@@ -5,7 +5,7 @@ import { isPublicAlert } from '../alerts/validateAlert'
 
 const ADMIN_URL = '/api/admin/alerts'
 const PAGE_SIZE = 200
-export const ALERT_STATUSES: AlertStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'SUPPRESSED']
+export const ALERT_STATUSES: AlertStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'SUPPRESSED', 'RESOLVED', 'CANCELLED']
 
 // Read every page so counts and community warnings are not capped at the API default.
 async function readPages<T>(path: string, signal?: AbortSignal, token?: string): Promise<T[]> {
@@ -63,6 +63,6 @@ export function reviewAlert(token: string, id: number, action: AlertAction, reas
   return apiRequest<AdminAlert>(`${ADMIN_URL}/${id}/${action}`, {
     token,
     method: 'PATCH',
-    ...(action === 'suppress' ? { body: JSON.stringify({ reason: reason?.trim() }) } : {}),
+    ...(['suppress', 'resolve', 'cancel'].includes(action) ? { body: JSON.stringify({ reason: reason?.trim() }) } : {}),
   })
 }
