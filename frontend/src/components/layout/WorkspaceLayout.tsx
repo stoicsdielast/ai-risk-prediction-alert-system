@@ -6,6 +6,7 @@ import { Sidebar } from './Sidebar'
 import { PublicAlertProvider } from '../../alerts/PublicAlertProvider'
 import { BrowserAlertControl } from '../alerts/BrowserAlertControl'
 import { ApprovedAlertBanner } from '../alerts/ApprovedAlertBanner'
+import { InAppAlerts } from '../alerts/InAppAlerts'
 
 export function WorkspaceLayout() {
   const { user } = useAuth()
@@ -36,6 +37,7 @@ export function WorkspaceLayout() {
         </div>
         <main className="workspace-main">
           <BrowserAlertControl />
+          <InAppAlerts />
           <ApprovedAlertBanner />
           <Outlet />
         </main>

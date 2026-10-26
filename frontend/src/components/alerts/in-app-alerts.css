@@ -1,0 +1,23 @@
+.in-app-alerts { margin-bottom: 1.25rem; min-width: 0; }
+.in-app-alerts__tray { border: 1px solid var(--border); border-radius: 0.75rem; background: var(--surface, #fff); }
+.in-app-alerts__tray > summary { min-height: 2.75rem; padding: 0.8rem 1rem; cursor: pointer; color: var(--brand-navy); font-weight: 700; overflow-wrap: anywhere; }
+.in-app-alerts__count { display: inline-block; margin-inline-start: 0.75rem; border-radius: 1rem; padding: 0.2rem 0.6rem; color: #fff; background: var(--brand-navy, #22304c); font-size: 0.75rem; }
+.in-app-alerts__tray > summary svg { vertical-align: middle; margin-inline: 0.25rem; }
+.in-app-alerts__body { padding: 0 1rem 1rem; }
+.in-app-alerts h2 { font-size: 1rem; }
+.in-app-alerts p { margin: 0.6rem 0; font-size: 0.85rem; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
+.in-app-alerts small { display: block; font-size: 0.75rem; }
+.in-app-alerts__actions, .in-app-alerts__heading { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.in-app-alerts .button { min-height: 2.75rem; max-width: 100%; padding: 0.65rem 0.85rem; font-size: 0.8rem; white-space: normal; overflow-wrap: anywhere; }
+.in-app-alerts__list { list-style: none; padding: 0; max-height: 55vh; max-height: 55dvh; overflow-y: auto; overscroll-behavior: contain; }
+.in-app-alerts__list li { margin: 0.75rem 0; padding: 0.9rem; border: 1px solid var(--border); border-inline-start: 3px solid var(--border); border-radius: 0.5rem; }
+.in-app-alerts__list li.is-unread { border-inline-start-color: var(--brand-navy); background: var(--surface-muted, #f4f6fa); }
+.in-app-alerts__list .button { margin-top: 0.75rem; }
+.in-app-alerts__notices { position: fixed; z-index: 35; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); width: min(26rem, calc(100vw - 2rem)); max-height: 50vh; max-height: 50dvh; overflow-y: auto; display: grid; gap: 0.75rem; }
+.in-app-alerts__notice { padding: 1rem; border: 1px solid var(--border); border-inline-start: 3px solid var(--risk-high, #b45309); border-radius: 0.75rem; background: var(--surface, #fff); box-shadow: 0 6px 24px #18233826; }
+.in-app-alerts__notice p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.in-app-alerts :is(button, a, summary):focus-visible { outline: 3px solid var(--brand-navy, #22304c); outline-offset: 3px; }
+@media (max-width: 420px) {
+  .in-app-alerts__actions > .button { flex: 1 1 8rem; }
+  .in-app-alerts__body { padding-inline: 0.75rem; }
+}
