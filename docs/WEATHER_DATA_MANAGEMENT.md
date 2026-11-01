@@ -1,10 +1,7 @@
 # Weather Data Management
 
-Implemented 20 October 2026. Requirements: `TEAM_TASK_TICKETS.md` AR-01/AR-02 and
-ingestion reliability from AR-04, plus the user's scheduled-ingestion requirements.
-No separate formal SRS/SAD was located (available PDF/DOCX files are team tickets).
-The five-functionality audit retains its historical snapshot at `f60a7d8` with a
-verified implementation update. See [V1 prediction workflow](V1_PREDICTION_WORKFLOW.md)
+Implemented 20 October 2026. Covers observation storage, weather APIs and
+scheduled-ingestion reliability. See [V1 prediction workflow](V1_PREDICTION_WORKFLOW.md)
 for the new source-specific observation-to-model path.
 
 ## Storage and provenance

@@ -64,3 +64,22 @@ ml/artifacts/synthetic/
 /docs/OVERNIGHT_TEAM_TASKS.docx
 /docs/TEAM_TASK_TICKETS.docx
 /docs/TEAM_TASK_TICKETS.pdf
+
+# Private team notes, presentation preparation and internal audit exports.
+/.private-docs/
+/docs/TEAM_TASK_TICKETS.md
+/docs/TEAM_TASK_TICKETS.docx
+/docs/TEAM_TASK_TICKETS.pdf
+/docs/OVERNIGHT_TEAM_TASKS.md
+/docs/OVERNIGHT_TEAM_TASKS.docx
+/docs/PRESENTATION_HANDBOOK.md
+/docs/presentation/
+/presentation/
+/presentation.zip
+/docs/FIVE_FUNCTIONALITY_AUDIT.md
+/docs/IS314_Five_Functionalities_Audit_Evidence.md
+/docs/IS314_Five_Functionalities_Demo_Guide.html
+/docs/IS314_Five_Functionalities_Demo_Guide.pdf
+/docs/Final Presentation Guidelines and Rubric.pdf
+/docs/SYNTHETIC_MIGRATION_BACKUP.md
+/docs/synthetic_migration_inventory.json

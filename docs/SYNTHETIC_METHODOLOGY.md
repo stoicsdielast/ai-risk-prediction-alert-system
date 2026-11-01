@@ -10,7 +10,6 @@ of concept.
 Related documents:
 
 - `docs/SYNTHETIC_LOCATION_AUDIT.json` — authoritative location audit
-- `docs/SYNTHETIC_MIGRATION_BACKUP.md` — pre-migration backup inventory
 - `ml/data/synthetic_fiji/v1/dataset_metadata.json` — dataset contract
 - `ml/data/synthetic_fiji/v1/data_quality_report.md` — quality checks
 - `ml/runs/synthetic-v1/evaluation_report.md` — measured run report

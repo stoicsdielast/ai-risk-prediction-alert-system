@@ -13,9 +13,6 @@ return `DATA_UNAVAILABLE`: real gauge datums/geography and a validated compatibl
 operational model are still unavailable. No real observations are copied into synthetic
 storage and no assumed geography is attached to genuine measurements.
 
-The original SRS/SAD was not found; requirement traceability uses the available
-`TEAM_TASK_TICKETS.md` AR-03 and AI-02/03, plus the explicit user requirements.
-
 ## Exact feature compatibility
 
 The selected artifact contains **56 ordered features**. `v1_model.py` verifies model
