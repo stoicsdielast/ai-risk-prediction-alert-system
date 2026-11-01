@@ -16,9 +16,10 @@ events. Data sources and test records are labelled throughout the application.
 Community alerts issued through this system are separate from official Fiji
 Meteorological Service warnings, which always take precedence.
 
+![FloodWatch Fiji homepage](public/homepage.jpg)
+
 ## Features
 
-![FloodWatch Fiji homepage](public/homepage.jpg)
 
 | Area | Implemented capabilities |
 | --- | --- |
