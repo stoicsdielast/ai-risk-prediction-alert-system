@@ -18,6 +18,8 @@ Meteorological Service warnings, which always take precedence.
 
 ## Features
 
+![FloodWatch Fiji homepage](public/homepage.jpg)
+
 | Area | Implemented capabilities |
 | --- | --- |
 | Flood risk dashboard | Registry-based location and risk summaries, recent predictions, alert activity, prediction analytics and model performance views. |
