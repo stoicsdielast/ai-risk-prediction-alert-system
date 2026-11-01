@@ -1,5 +1,7 @@
 # FloodWatch Fiji
 
+[Setup](#local-development) · [Architecture](#architecture-and-stack) · [Documentation](#documentation) · [Backend](backend/README.md) · [Frontend](frontend/README.md)
+
 **Fiji Flood Risk Prediction and Community Alert System · IS314**
 
 FloodWatch Fiji brings weather monitoring, flood risk analysis, mapping and
@@ -327,7 +329,7 @@ backend/.venv/bin/python -m pytest ml/tests -q
 | Synthetic Fiji model | [Methodology and evaluation](docs/SYNTHETIC_METHODOLOGY.md) |
 | V2/V3 research | [V2 protocol](docs/SYNTHETIC_V2_PROTOCOL.md), [V2 results](docs/SYNTHETIC_V2_RESULTS.md), [V3 protocol](docs/SYNTHETIC_V3_PROTOCOL.md), [V3 results](docs/SYNTHETIC_V3_RESULTS.md) |
 | Bangladesh historical benchmark | [Research contract](docs/RESEARCH_BANGLADESH.md), [measured technical report](ml/artifacts/technical_report.md) |
-| Project presentation and history | [Presentation handbook](docs/PRESENTATION_HANDBOOK.md), [historical UI integration guide](docs/PROTOTYPE_UI.md), [frontend reference](frontend/README.md) |
+| Frontend architecture and history | [Historical UI integration guide](docs/PROTOTYPE_UI.md), [frontend reference](frontend/README.md) |
 
 Some module guides retain earlier milestone descriptions. The setup above and
 the current alert-management guide describe the present application workflow.

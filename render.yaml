@@ -1,0 +1,46 @@
+# Apply as a NEW service/DB. Keep the existing Vercel production deployment.
+# Dashboard inputs have no defaults; no real credentials belong in this file.
+databases:
+  - name: floodwatch-presentation-db
+    plan: 0.1c-256mb
+    region: singapore
+    diskSizeGB: 5
+    databaseName: floodwatch
+    user: floodwatch
+
+services:
+  - type: web
+    name: floodwatch-presentation-api
+    runtime: python
+    plan: 1c-2g
+    region: singapore
+    autoDeployTrigger: "off"
+    buildCommand: bash deployment/build.sh
+    preDeployCommand: cd backend && python -m app.db.deploy
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /api/ready
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.7
+      - key: DATABASE_URL
+        fromDatabase:
+          name: floodwatch-presentation-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: MODEL_BUNDLE_URL
+        sync: false
+      - key: MODEL_BUNDLE_SHA256
+        sync: false
+      - key: READINESS_REQUIRE_MODEL
+        value: "true"
+      - key: ALERT_DEMO_ENABLED
+        value: "false"
+      - key: SYNTHETIC_DEMO_ENABLED
+        value: "false"
+      - key: BROWSER_DELIVERY_ENABLED
+        value: "false"
+      - key: WEATHER_INGESTION_ENABLED
+        value: "false"
